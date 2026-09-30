@@ -9,10 +9,11 @@ Samsung PRISM GenAI Hackathon 2026, Theme 05. A voice/text/vision assistant that
 |---|---|
 | Hackathon | Samsung PRISM GenAI Hackathon 2026 (3rd edition) |
 | Theme | 05, Interruptible Real-Time Agents |
-| Team | `TODO: CollegeName_TeamName` |
-| Members | `TODO: name, year and branch for each member (max 4)` |
+| Team | Santa Claude (`MSRIT_SantaClaude`) |
+| College | MSRIT |
+| Members | Kartikey Pandey, Primary Data Analyst |
 | Release tag | [`PRISM_GENAI_HACKATHON_Y2026`](https://github.com/pandeykartik658-del/samsung-hackathon/releases/tag/PRISM_GENAI_HACKATHON_Y2026) (the tagged commit is the one judged) |
-| Presentation | [`submission/Theme05_Jury_Deck.pptx`](submission/Theme05_Jury_Deck.pptx) (PDF copy: [`submission/Theme05_Jury_Deck.pdf`](submission/Theme05_Jury_Deck.pdf)) |
+| Presentation | [`submission/MSRIT_SantaClaude.pptx`](submission/MSRIT_SantaClaude.pptx) (PDF copy: [`submission/MSRIT_SantaClaude.pdf`](submission/MSRIT_SantaClaude.pdf)) |
 | Demo video (in repo) | [`submission/Theme05_Demo.mp4`](submission/Theme05_Demo.mp4), 4:30, 1080p, voice narration with burned-in captions ([`.srt`](submission/Theme05_Demo_captions.srt)) |
 | Demo video (YouTube/Drive) | `TODO: paste the YouTube (unlisted) or Google Drive link here` |
 | Video script | [`submission/DEMO_VIDEO_SCRIPT.md`](submission/DEMO_VIDEO_SCRIPT.md); the trace pages it shows are in [`submission/viewer/`](submission/viewer/) (open in a browser, press Play) |
@@ -43,6 +44,19 @@ docker run --rm -i theme5 python -m theme5 serve      # JSONL events on stdin, a
 ```
 
 Without `make`: `python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt -r requirements-dev.txt`, then `python -m pytest -q tests viewer` and `bash run_demo.sh`.
+
+### Results
+
+All numbers come from our own simulator and rubric replica (`bench/scorer.py`), because the official evaluation kit is not released yet. The Docker CI run on every push reproduces them.
+
+| Suite | Score |
+|---|---|
+| 60-scenario adversarial bench, kit transcripts and labels provided | 100.0 |
+| Same bench, raw media only (`--strip-oracle`, Whisper + OCR do the perception) | 87.4 (was 78.2 before perception was switched on) |
+| Visual scenarios on raw frames | 12 of 12 at 100 |
+| 9 public-style scenarios on raw media | 91.3, 7 of 9 pass |
+
+Audio is the weak spot on raw media: most misses are flight codes and passenger names that Whisper mishears. Every miss ends in a clarifying question or a partial answer, and no wrong or duplicate booking was made in any run.
 
 ## Problem
 
@@ -167,7 +181,7 @@ tests/             pytest suite
 docs/              SPEC, ARCHITECTURE, PLAN, MULTIMODAL, SLOTS_INTEGRATION
 scripts/           fetch_models.py (Whisper download + offline smoke load)
 models/            Whisper weights (git-ignored; filled by `make models` or the Docker build)
-submission/        jury deck (.pptx + .pdf), demo video (.mp4 + .srt), video script, demo trace pages
+submission/        jury deck MSRIT_SantaClaude (.pptx + .pdf), demo video (.mp4 + .srt), video script, demo trace pages
 .github/workflows/ docker.yml: build the image, real-weight Whisper test, full tests, demo on every push
 ```
 
@@ -275,7 +289,7 @@ Check that the kit's Safety & Protocol score is full on the 9 public scenarios b
 - [x] Code, `requirements.txt`, Dockerfile and README in the repo; Docker build, tests and demo run in CI on every push.
 - [x] Presentation and demo video committed under `submission/`.
 - [x] Release tag `PRISM_GENAI_HACKATHON_Y2026` on the final commit.
-- [ ] Team name, college and members filled in above and on slide 1 of the deck; deck renamed `CollegeName_TeamName.pptx` for the Google Form.
+- [x] Team name, college and members filled in above and on slide 1 of the deck; deck named `MSRIT_SantaClaude` per the naming rule.
 - [ ] Demo video uploaded (YouTube unlisted or Drive) and the link added above and on slides 5 and 11.
 - [ ] Fill the kit's scores into this README once the kit is released.
 
