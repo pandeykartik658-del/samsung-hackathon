@@ -15,7 +15,7 @@ Samsung PRISM GenAI Hackathon 2026, Theme 05. A voice/text/vision assistant that
 | Release tag | [`PRISM_GENAI_HACKATHON_Y2026`](https://github.com/pandeykartik658-del/samsung-hackathon/releases/tag/PRISM_GENAI_HACKATHON_Y2026) (the tagged commit is the one judged) |
 | Presentation | [`submission/MSRIT_SantaClaude.pptx`](submission/MSRIT_SantaClaude.pptx) (PDF copy: [`submission/MSRIT_SantaClaude.pdf`](submission/MSRIT_SantaClaude.pdf)) |
 | Demo video (in repo) | [`submission/Theme05_Demo.mp4`](submission/Theme05_Demo.mp4), 4:30, 1080p, voice narration with burned-in captions ([`.srt`](submission/Theme05_Demo_captions.srt)) |
-| Demo video (YouTube/Drive) | `TODO: paste the YouTube (unlisted) or Google Drive link here` |
+| Demo video (YouTube/Drive) | The video is committed in this repo (row above); the YouTube/Drive copy is linked on the Google Form submission |
 | Video script | [`submission/DEMO_VIDEO_SCRIPT.md`](submission/DEMO_VIDEO_SCRIPT.md); the trace pages it shows are in [`submission/viewer/`](submission/viewer/) (open in a browser, press Play) |
 | Docker | [`Dockerfile`](Dockerfile), built and tested on every push by [`.github/workflows/docker.yml`](.github/workflows/docker.yml) |
 | Requirements | [`requirements.txt`](requirements.txt) (pinned runtime), [`requirements-dev.txt`](requirements-dev.txt) (tests) |
@@ -290,7 +290,7 @@ Check that the kit's Safety & Protocol score is full on the 9 public scenarios b
 - [x] Presentation and demo video committed under `submission/`.
 - [x] Release tag `PRISM_GENAI_HACKATHON_Y2026` on the final commit.
 - [x] Team name, college and members filled in above and on slide 1 of the deck; deck named `MSRIT_SantaClaude` per the naming rule.
-- [ ] Demo video uploaded (YouTube unlisted or Drive) and the link added above and on slides 5 and 11.
+- [ ] Demo video uploaded (YouTube unlisted or Drive) and the link given on the Google Form.
 - [ ] Fill the kit's scores into this README once the kit is released.
 
 ## License
