@@ -1,0 +1,36 @@
+# .github/workflows/docker.yml
+# Builds the offline image (Whisper base.en baked in from Hugging Face) and runs, inside it:
+# the real-weights Whisper test, the full test suite and the demo.
+name: docker
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t theme5 .
+
+      - name: Whisper test (real weights)
+        run: |
+          docker run --rm -e THEME5_TEST_WHISPER=1 theme5 \
+            python -m pytest -q -rA -p no:cacheprovider tests/test_multimodal.py | tee whisper.log
+          # the real-model test is skipped silently without weights; require it to have run
+          grep -q "PASSED tests/test_multimodal.py::test_faster_whisper_real_model" whisper.log
+
+      - name: Test suite
+        run: docker run --rm theme5 python -m pytest -q -p no:cacheprovider tests viewer
+
+      - name: Demo
+        run: docker run --rm theme5
+
+      - name: Image size
+        if: always()
+        run: docker image ls theme5
