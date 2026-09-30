@@ -11,7 +11,7 @@ Samsung PRISM GenAI Hackathon 2026, Theme 05. A voice/text/vision assistant that
 | Theme | 05, Interruptible Real-Time Agents |
 | Team | Santa Claude (`MSRIT_SantaClaude`) |
 | College | MSRIT |
-| Members | Kartikey Pandey, Primary Data Analyst |
+| Members | Kartikey Pandey, 2nd year, AIML, Primary Data Analyst |
 | Release tag | [`PRISM_GENAI_HACKATHON_Y2026`](https://github.com/pandeykartik658-del/samsung-hackathon/releases/tag/PRISM_GENAI_HACKATHON_Y2026) (the tagged commit is the one judged) |
 | Presentation | [`submission/MSRIT_SantaClaude.pptx`](submission/MSRIT_SantaClaude.pptx) (PDF copy: [`submission/MSRIT_SantaClaude.pdf`](submission/MSRIT_SantaClaude.pdf)) |
 | Demo video (in repo) | [`submission/Theme05_Demo.mp4`](submission/Theme05_Demo.mp4), 4:30, 1080p, voice narration with burned-in captions ([`.srt`](submission/Theme05_Demo_captions.srt)) |
