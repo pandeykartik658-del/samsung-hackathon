@@ -1,0 +1,929 @@
+<!doctype html><!-- /mnt/project-files/theme5/viewer/trace_viewer.html -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trace Timeline</title>
+<!--
+Theme 05 trace viewer. Single self-contained file, no network, no dependencies.
+Load a JSONL trace (file picker, drag and drop, paste, or ?trace=<url> when served over http).
+Every field name it reads is an ASSUMPTION; see TRACE_FORMAT.md next to this file.
+Keys: Space play/pause, Left/Right step, Home/End, +/- zoom, F fit.
+-->
+<style>
+:root {
+  --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1f; --muted: #6b6b70; --line: #e2e2e0; --grid: #efefec;
+  --user: #2f6fdb; --agent: #1a8f5a; --filler: #9ab8a8; --clarify: #c07a00; --final: #6a3fc4;
+  --ok: #1a8f5a; --err: #d0342c; --warn: #d98200; --pending: #7f8ea3; --stale: #b9b9bd;
+  --interrupt: #d0342c; --snap: #6a3fc4; --sel: #ffbf00; --future: 0.16;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141416; --panel: #1d1d20; --ink: #ececef; --muted: #9a9aa2; --line: #313136; --grid: #242428;
+    --user: #6ea0ff; --agent: #43c08a; --filler: #5d7d6d; --clarify: #f0a93a; --final: #a888ff;
+    --ok: #43c08a; --err: #ff6b62; --warn: #f0a93a; --pending: #8795aa; --stale: #5a5a60;
+    --interrupt: #ff6b62; --snap: #a888ff;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141416; --panel: #1d1d20; --ink: #ececef; --muted: #9a9aa2; --line: #313136; --grid: #242428;
+  --user: #6ea0ff; --agent: #43c08a; --filler: #5d7d6d; --clarify: #f0a93a; --final: #a888ff;
+  --ok: #43c08a; --err: #ff6b62; --warn: #f0a93a; --pending: #8795aa; --stale: #5a5a60;
+  --interrupt: #ff6b62; --snap: #a888ff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
+header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+#meta { color: var(--muted); flex: 1; min-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+button, select { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); min-width: 74px; }
+main { padding: 12px 16px 40px; display: grid; gap: 12px; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; }
+.panel > h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--line); font-weight: 600; }
+#empty { padding: 48px 16px; text-align: center; color: var(--muted); border: 2px dashed var(--line); border-radius: 8px; }
+#empty p { margin: 6px 0; }
+body.dragging #empty, body.dragging .tl { outline: 3px dashed var(--user); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; }
+#scrub { flex: 1; min-width: 160px; accent-color: var(--ink); }
+#clock { font-variant-numeric: tabular-nums; min-width: 128px; text-align: right; }
+.now { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+.now > div { padding: 8px 12px; border-right: 1px solid var(--line); min-height: 52px; }
+.now > div:last-child { border-right: 0; }
+.now .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.now .v { margin-top: 2px; }
+.tl { display: grid; grid-template-columns: 150px 1fr; }
+.tl-labels { border-right: 1px solid var(--line); }
+.tl-scroll { overflow-x: auto; overflow-y: hidden; position: relative; }
+svg text { fill: var(--ink); font-size: 11px; }
+svg .lbl { fill: var(--muted); }
+svg .item { cursor: pointer; }
+svg .item.future { opacity: var(--future); }
+svg .item.sel > :first-child { stroke: var(--sel); stroke-width: 3; }
+svg .row-bg { fill: transparent; }
+svg .row-bg.alt { fill: var(--grid); opacity: .5; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 8px 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 900px) { .cols { grid-template-columns: 1fr; } .tl { grid-template-columns: 110px 1fr; } }
+#snaps { padding: 8px; display: grid; gap: 6px; max-height: 520px; overflow: auto; }
+details.snap { border: 1px solid var(--line); border-radius: 6px; }
+details.snap > summary { list-style: none; cursor: pointer; padding: 6px 10px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+details.snap > summary::-webkit-details-marker { display: none; }
+details.snap > summary::before { content: "\25B8"; color: var(--muted); }
+details.snap[open] > summary::before { content: "\25BE"; }
+details.snap.future { opacity: .4; }
+details.snap.current { border-color: var(--snap); box-shadow: 0 0 0 1px var(--snap); }
+.t { font-variant-numeric: tabular-nums; color: var(--muted); }
+.tag { font-size: 11px; padding: 0 6px; border-radius: 10px; border: 1px solid var(--line); color: var(--muted); }
+.chg { font-size: 11px; padding: 0 6px; border-radius: 10px; background: color-mix(in srgb, var(--snap) 18%, transparent); color: var(--ink); }
+table { border-collapse: collapse; width: 100%; }
+td, th { text-align: left; padding: 3px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.changed { background: color-mix(in srgb, var(--snap) 14%, transparent); }
+td.removed { text-decoration: line-through; color: var(--muted); }
+code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+#detail pre { margin: 0; padding: 10px 12px; white-space: pre-wrap; word-break: break-word; max-height: 520px; overflow: auto; }
+#detail .hint { padding: 10px 12px; color: var(--muted); }
+#log { max-height: 360px; overflow: auto; }
+#log tr { cursor: pointer; }
+#log tr.future td { opacity: .45; }
+#log tr.cur td { background: color-mix(in srgb, var(--sel) 22%, transparent); }
+#log td:first-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+#warnings ul { margin: 0; padding: 8px 12px 8px 30px; }
+#warnings li { margin: 2px 0; }
+#tip { position: fixed; pointer-events: none; background: var(--ink); color: var(--panel); padding: 5px 8px; border-radius: 5px; font-size: 12px; max-width: 360px; z-index: 10; display: none; white-space: pre-wrap; }
+.hidden { display: none !important; }
+#pastebox { width: 100%; min-height: 90px; margin-top: 8px; font-family: ui-monospace, monospace; font-size: 12px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Trace timeline</h1>
+  <span id="meta">No trace loaded</span>
+  <label><button type="button" id="openBtn">Open JSONL</button><input id="file" type="file" accept=".jsonl,.json,.ndjson,.txt" class="hidden"></label>
+  <button type="button" id="sampleBtn">Load sample</button>
+  <button type="button" id="themeBtn" title="Toggle light/dark">Theme</button>
+</header>
+
+<main>
+  <section id="empty">
+    <p><b>Drop a JSONL trace here</b>, use Open JSONL, or load the built-in sample.</p>
+    <p>You can also paste trace lines below.</p>
+    <textarea id="pastebox" placeholder='{"ts_ms":0,"dir":"in","event":{"type":"text_chunk","text":"hi","end_of_turn":true}}'></textarea>
+    <p><button type="button" id="pasteBtn">Load pasted trace</button></p>
+  </section>
+
+  <section id="app" class="hidden">
+    <div class="panel">
+      <div class="controls">
+        <button type="button" class="primary" id="playBtn" title="Space">Play</button>
+        <button type="button" id="restartBtn" title="Home">Restart</button>
+        <select id="speed" title="Replay speed (virtual clock)">
+          <option value="0.25">0.25x</option><option value="0.5">0.5x</option><option value="1" selected>1x</option>
+          <option value="2">2x</option><option value="4">4x</option><option value="10">10x</option>
+        </select>
+        <input id="scrub" type="range" min="0" max="1000" step="1" value="1000" aria-label="Virtual time">
+        <span id="clock">0.000 s</span>
+        <button type="button" id="zoomOut" title="-">&minus;</button>
+        <button type="button" id="zoomFit" title="F">Fit</button>
+        <button type="button" id="zoomIn" title="+">+</button>
+      </div>
+      <div class="now">
+        <div><div class="k">User</div><div class="v" id="nowUser">&nbsp;</div></div>
+        <div><div class="k">Agent</div><div class="v" id="nowAgent">&nbsp;</div></div>
+        <div><div class="k">Tools in flight</div><div class="v" id="nowTools">&nbsp;</div></div>
+        <div><div class="k">State snapshot</div><div class="v" id="nowSnap">&nbsp;</div></div>
+      </div>
+      <div class="tl">
+        <div class="tl-labels"><svg id="labels"></svg></div>
+        <div class="tl-scroll" id="scroller"><svg id="chart"></svg></div>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="cols">
+      <div class="panel"><h2>State snapshots</h2>
+        <div style="padding:6px 12px 0"><label><input type="checkbox" id="allSnaps"> include unchanged</label></div>
+        <div id="snaps"></div>
+      </div>
+      <div class="panel" id="detail"><h2>Selected item</h2><div class="hint">Click anything on the timeline, a snapshot, or a log row.</div></div>
+    </div>
+
+    <div class="panel" id="warnings"><h2>Trace checks</h2><ul id="warnList"></ul></div>
+    <div class="panel"><h2>Log</h2><div id="log"></div></div>
+  </section>
+</main>
+<div id="tip"></div>
+
+<script type="application/x-ndjson" id="sample-trace">
+{"data": {"duration_ms": 20000, "modality": "text", "scenario_id": "s02_text_destination_change"}, "dir": "sys", "kind": "scenario_start", "seq": 0, "t_ms": 0.0}
+{"data": {"date": "2026-09-29", "event_id": "manifest", "session": {"locale": "en-IN", "reference_date": "2026-09-29", "timezone": "Asia/Kolkata"}, "t": 0.0, "tools": [{"description": "Search available flights between two airports on a date.", "name": "flight_search", "parameters": {"properties": {"date": {"description": "Departure date, YYYY-MM-DD", "type": "string"}, "destination": {"description": "IATA code of arrival airport", "type": "string"}, "origin": {"description": "IATA code of departure airport", "type": "string"}, "passengers": {"description": "Number of passengers", "type": "integer"}}, "required": ["origin", "destination", "date"], "type": "object"}, "read_only": true, "side_effect": "read"}, {"description": "Book a seat on a specific flight for a passenger. State-modifying.", "name": "book_flight", "parameters": {"properties": {"flight_id": {"type": "string"}, "passenger_name": {"type": "string"}}, "required": ["flight_id", "passenger_name"], "type": "object"}, "read_only": false, "side_effect": "write"}], "type": "tool_manifest"}, "dir": "in", "kind": "tool_manifest", "seq": 1, "t_ms": 0.0}
+{"data": {"end_of_turn": false, "event_id": "e1", "t": 0.0, "text": "Search flights from Bangalore", "type": "text_chunk"}, "dir": "in", "kind": "text_chunk", "seq": 2, "t_ms": 0.0}
+{"data": {"end_of_turn": true, "event_id": "e2", "t": 400.0, "text": "to Delhi on October 5th.", "type": "text_chunk"}, "dir": "in", "kind": "text_chunk", "seq": 3, "t_ms": 400.0}
+{"data": {"action_id": "act-0001", "kind": "progress", "snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Delhi", "origin": "Bangalore"}}, "state_snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Delhi", "origin": "Bangalore"}}, "t": 400.0, "text": "Searching flights from Bangalore to Delhi on 2026-10-05.", "type": "speak"}, "dir": "out", "kind": "speak", "seq": 4, "t_ms": 400.0}
+{"data": {"action_id": "act-0002", "args": {"date": "2026-10-05", "destination": "Delhi", "origin": "Bangalore"}, "arguments": {"date": "2026-10-05", "destination": "Delhi", "origin": "Bangalore"}, "call_id": "call-0001", "name": "flight_search", "snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Delhi", "origin": "Bangalore"}}, "state_snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Delhi", "origin": "Bangalore"}}, "t": 400.0, "tool": "flight_search", "type": "tool_call"}, "dir": "out", "kind": "tool_call", "seq": 5, "t_ms": 400.0}
+{"data": {"args": {"date": "2026-10-05", "destination": "Delhi", "origin": "Bangalore"}, "call_id": "call-0001", "call_index": 1, "planned_delay_ms": 3000.0, "planned_status": "ok", "rejected": null, "side_effect": "read", "tool": "flight_search"}, "dir": "sys", "kind": "tool_started", "seq": 6, "t_ms": 400.0}
+{"data": {"event_id": "e3", "reason": "barge_in", "t": 1900.0, "type": "interrupt"}, "dir": "in", "kind": "interrupt", "seq": 7, "t_ms": 1900.0}
+{"data": {"end_of_turn": true, "event_id": "e4", "t": 1900.0, "text": "Actually, make that Hyderabad instead.", "type": "text_chunk"}, "dir": "in", "kind": "text_chunk", "seq": 8, "t_ms": 1900.0}
+{"data": {"action_id": "act-0003", "call_id": "call-0001", "reason": "superseded", "snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}}, "state_snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}}, "t": 1900.0, "type": "cancel"}, "dir": "out", "kind": "cancel", "seq": 9, "t_ms": 1900.0}
+{"data": {"call_id": "call-0001", "tool": "flight_search"}, "dir": "sys", "kind": "tool_cancelled", "seq": 10, "t_ms": 1900.0}
+{"data": {"call_id": "call-0001", "error": "cancelled_by_agent", "ok": false, "retryable": false, "status": "cancelled", "t": 1900.0, "tool": "flight_search", "type": "tool_result"}, "dir": "in", "kind": "tool_result", "seq": 11, "t_ms": 1900.0}
+{"data": {"action_id": "act-0004", "kind": "progress", "snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}}, "state_snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}}, "t": 1900.0, "text": "Okay, updating: searching flights from Bangalore to Hyderabad on 2026-10-05.", "type": "speak"}, "dir": "out", "kind": "speak", "seq": 12, "t_ms": 1900.0}
+{"data": {"action_id": "act-0005", "args": {"date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}, "arguments": {"date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}, "call_id": "call-0002", "name": "flight_search", "snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}}, "state_snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}}, "t": 1900.0, "tool": "flight_search", "type": "tool_call"}, "dir": "out", "kind": "tool_call", "seq": 13, "t_ms": 1900.0}
+{"data": {"args": {"date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}, "call_id": "call-0002", "call_index": 2, "planned_delay_ms": 3000.0, "planned_status": "ok", "rejected": null, "side_effect": "read", "tool": "flight_search"}, "dir": "sys", "kind": "tool_started", "seq": 14, "t_ms": 1900.0}
+{"data": {"call_id": "call-0002", "status": "ok", "tool": "flight_search"}, "dir": "sys", "kind": "tool_completed", "seq": 15, "t_ms": 4900.0}
+{"data": {"call_id": "call-0002", "ok": true, "result": {"flights": [{"date": "2026-10-05", "depart": "08:20", "destination": "HYD", "flight_id": "6E-6122", "origin": "BLR", "price_inr": 2900}, {"date": "2026-10-05", "depart": "17:45", "destination": "HYD", "flight_id": "QP-1345", "origin": "BLR", "price_inr": 3150}]}, "status": "ok", "t": 4900.0, "tool": "flight_search", "type": "tool_result"}, "dir": "in", "kind": "tool_result", "seq": 16, "t_ms": 4900.0}
+{"data": {"action_id": "act-0006", "snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}}, "state_snapshot": {"intent": "flight_search", "slots": {"choice": 5, "date": "2026-10-05", "destination": "Hyderabad", "origin": "Bangalore"}}, "t": 4900.0, "text": "I found 2 options: 6E-6122 at 08:20 for 2900 and QP-1345 at 17:45 for 3150.", "type": "final"}, "dir": "out", "kind": "final", "seq": 17, "t_ms": 4900.0}
+{"data": {"event_id": "session_end", "t": 5420.0, "type": "session_end"}, "dir": "in", "kind": "session_end", "seq": 18, "t_ms": 5420.0}
+{"data": {"reason": "quiescent", "state": {"bookings": [], "tickets": [], "writes": []}}, "dir": "sys", "kind": "scenario_end", "seq": 19, "t_ms": 5620.0}
+</script>
+
+<script>
+// A frame label is a string or an object like {label, model, confidence}.
+function frameLabel(l) {
+  if (l == null || typeof l !== "object") return String(l);
+  const name = String(l.label ?? l.name ?? l.text ?? "?").replace(/_/g, " ");
+  const bits = [l.model, typeof l.confidence === "number" ? l.confidence.toFixed(2) : null].filter(v => v != null && v !== "");
+  return bits.length ? `${name} ${bits.join(" ")}` : name;
+}
+"use strict";
+// ------------------------------------------------------------------------------------------
+// Normalisation. ASSUMPTION: field and type names; accepted spellings mirror sim/wire.py
+// (harness) and theme5/protocol.py (agent) so traces from either side load unchanged.
+// ------------------------------------------------------------------------------------------
+const EVENT_KIND = {
+  tool_manifest: "manifest", manifest: "manifest", tools: "manifest",
+  text: "text", transcript: "text", text_chunk: "text", user_text: "text",
+  audio: "audio", audio_clip: "audio", wav: "audio",
+  frame: "frame", video_frame: "frame", image: "frame",
+  interrupt: "interrupt", interruption: "interrupt", barge_in: "interrupt",
+  tool_result: "tool_result", tool_response: "tool_result", result: "tool_result",
+  end_session: "end", end: "end", session_end: "end", eos: "end",
+};
+const ACTION_KIND = {
+  speak: "speak", say: "speak", filler: "speak",
+  tool_call: "tool_call", call: "tool_call", call_tool: "tool_call",
+  cancel: "cancel", cancel_call: "cancel", cancellation: "cancel",
+  clarify: "clarify", clarification: "clarify", clarify_request: "clarify",
+  final: "final", final_response: "final", response: "final",
+  snapshot: "snapshot", state_snapshot: "snapshot",
+};
+const DIR_IN = new Set(["in", "event", "events", "input", "harness", "user", "env"]);
+const DIR_OUT = new Set(["out", "action", "actions", "output", "agent"]);
+const DIR_META = new Set(["meta", "header", "scenario", "info"]);
+// Harness bookkeeping (tool_started, write_committed, scenario_start/end...): log only, not drawn.
+const DIR_SYS = new Set(["sys", "system", "bookkeeping", "harness_sys"]);
+const TIME_KEYS_MS = ["ts_ms", "t_ms", "time_ms", "t", "ts", "timestamp"];
+const TIME_KEYS_S = ["t_s", "ts_s", "time_s"];
+
+const num = v => (typeof v === "number" && isFinite(v)) ? v : (typeof v === "string" && v.trim() !== "" && isFinite(+v) ? +v : null);
+const isObj = v => v !== null && typeof v === "object" && !Array.isArray(v);
+
+function pickTime(o) {
+  if (!isObj(o)) return null;
+  for (const k of TIME_KEYS_MS) { const n = num(o[k]); if (n !== null) return n; }
+  for (const k of TIME_KEYS_S) { const n = num(o[k]); if (n !== null) return n * 1000; }
+  return null;
+}
+
+function parseText(text) {
+  const t = text.trim();
+  if (!t) return { rows: [], errors: ["empty input"] };
+  if (t[0] === "[" || (t[0] === "{" && /^\{\s*"(trace|records|events)"\s*:/.test(t))) {
+    try {
+      const j = JSON.parse(t);
+      const arr = Array.isArray(j) ? j : (j.trace || j.records || j.events);
+      if (Array.isArray(arr)) return { rows: arr.map((raw, i) => ({ raw, line: i + 1 })), errors: [] };
+    } catch (e) { /* fall through to JSONL */ }
+  }
+  const rows = [], errors = [];
+  t.split(/\r?\n/).forEach((ln, i) => {
+    if (!ln.trim()) return;
+    try { rows.push({ raw: JSON.parse(ln), line: i + 1 }); }
+    catch (e) { errors.push(`line ${i + 1}: not valid JSON (${e.message})`); }
+  });
+  return { rows, errors };
+}
+
+function normalizeRow(raw, line) {
+  if (!isObj(raw)) return { line, raw, dir: "unknown", kind: "unknown", type: String(raw), body: {}, t: null };
+  let dir = String(raw.dir ?? raw.direction ?? raw.stream ?? raw.source ?? "").toLowerCase();
+  let body = null;
+  if (isObj(raw.event)) { body = raw.event; dir = dir || "in"; }
+  else if (isObj(raw.action)) { body = raw.action; dir = dir || "out"; }
+  else if (isObj(raw.data)) body = raw.data;
+  else if (isObj(raw.payload)) body = raw.payload;
+  else if (isObj(raw.meta)) { body = raw.meta; dir = dir || "meta"; }
+  if (!body) body = raw;
+  const type = String(body.type ?? body.event ?? body.action ?? raw.type ?? raw.kind ?? "").toLowerCase();
+  if (DIR_IN.has(dir)) dir = "in";
+  else if (DIR_OUT.has(dir)) dir = "out";
+  else if (DIR_META.has(dir)) dir = "meta";
+  else if (DIR_SYS.has(dir)) dir = "sys";
+  else dir = EVENT_KIND[type] ? "in" : ACTION_KIND[type] ? "out" : "unknown";
+  let kind;
+  if (dir === "meta") kind = "meta";
+  else if (dir === "sys") kind = type === "scenario_start" ? "meta" : "sys";
+  else if (dir === "in") kind = EVENT_KIND[type] || "unknown";
+  else if (dir === "out") kind = ACTION_KIND[type] || "unknown";
+  else kind = "unknown";
+  const t = pickTime(raw) ?? pickTime(body);
+  let snapshot = null;
+  const s = body.state_snapshot ?? body.snapshot ?? (kind === "snapshot" ? body : null);
+  if (isObj(s) && ("intent" in s || "slots" in s)) snapshot = { intent: s.intent ?? null, slots: isObj(s.slots) ? s.slots : {} };
+  return { line, raw, dir, kind, type, body, t, snapshot };
+}
+
+function toolMode(def) {
+  // ASSUMPTION mirrored from protocol._is_state_modifying: unclear tools count as state-modifying.
+  if (def.read_only === true || def.readonly === true || def.readOnly === true) return "R";
+  if (def.read_only === false || def.state_modifying === true) return "W";
+  const k = String(def.kind ?? def.category ?? def.effect ?? def.mode ?? "").toLowerCase();
+  if (/read/.test(k) && !/write|modif/.test(k)) return "R";
+  return "W";
+}
+
+function buildModel(text) {
+  const parsed = parseText(text);
+  const warnings = parsed.errors.slice();
+  const recs = parsed.rows.map(r => normalizeRow(r.raw, r.line));
+  let last = 0, noTime = 0, ooo = 0;
+  recs.forEach((r, i) => {
+    r.idx = i;
+    if (r.t === null) { r.t = last; r.noTime = true; noTime++; }
+    else if (r.t < last) { r.outOfOrder = true; ooo++; }
+    last = Math.max(last, r.t);
+  });
+  if (noTime) warnings.push(`${noTime} record(s) had no timestamp; placed at the previous record's time.`);
+  if (ooo) warnings.push(`${ooo} record(s) have timestamps earlier than a record before them (out of order).`);
+  const meta = recs.find(r => r.kind === "meta");
+  const events = recs.filter(r => r.kind !== "meta");
+  const sorted = events.slice().sort((a, b) => a.t - b.t || a.idx - b.idx);
+
+  const toolModes = {};
+  const calls = new Map();
+  const orphanId = n => `(no id #${n})`;
+  let orphanN = 0;
+  let snapshots = [];
+  let prevSnap = null;
+  for (const r of sorted) {
+    const b = r.body;
+    if (r.kind === "manifest") {
+      const tools = b.tools ?? b.manifest ?? b.functions ?? [];
+      (Array.isArray(tools) ? tools : Object.entries(tools).map(([name, d]) => ({ name, ...d })))
+        .forEach(d => { if (isObj(d) && d.name) toolModes[d.name] = toolMode(d); });
+    }
+    if (r.kind === "tool_call") {
+      const id = b.call_id != null ? String(b.call_id) : orphanId(++orphanN);
+      if (calls.has(id)) warnings.push(`call_id ${id} was issued more than once (line ${r.line}).`);
+      calls.set(id, { id, tool: String(b.tool ?? b.name ?? "?"), args: b.args ?? b.arguments ?? {}, start: r.t, startRec: r,
+        cancelAt: null, cancelRec: null, end: null, endRec: null, status: "pending", stale: false, retryOf: b.retry_of ?? null });
+    }
+    if (r.kind === "cancel") {
+      const c = calls.get(String(b.call_id));
+      if (!c) warnings.push(`cancel for unknown call_id ${b.call_id} (line ${r.line}).`);
+      else if (c.cancelAt === null) { c.cancelAt = r.t; c.cancelRec = r; }
+    }
+    if (r.kind === "tool_result") {
+      const id = String(b.call_id);
+      let c = calls.get(id);
+      if (!c) {
+        warnings.push(`tool_result for call_id ${id} that the agent never issued (line ${r.line}).`);
+        c = { id, tool: String(b.tool ?? "?"), args: {}, start: r.t, startRec: null, cancelAt: null, cancelRec: null,
+          end: null, endRec: null, status: "pending", stale: false, orphan: true };
+        calls.set(id, c);
+      }
+      if (c.endRec) warnings.push(`duplicate tool_result for call_id ${id} (line ${r.line}).`);
+      c.end = r.t; c.endRec = r;
+      c.status = String(b.status ?? (b.error != null ? "error" : "ok")).toLowerCase();
+      // A result is stale when its call was cancelled before it arrived, or the harness says so.
+      c.stale = b.stale === true || c.status === "cancelled" || (c.cancelAt !== null && c.cancelAt <= r.t);
+      r.stale = c.stale;
+      r.callRef = c;
+    }
+    if (r.snapshot) {
+      const changed = diffSnap(prevSnap, r.snapshot);
+      snapshots.push({ rec: r, t: r.t, snap: r.snapshot, prev: prevSnap, changed, isChange: !prevSnap || changed.any });
+      prevSnap = r.snapshot;
+    } else if (r.kind === "final") {
+      warnings.push(`final response without a state snapshot (line ${r.line}).`);
+    }
+  }
+  const callList = [...calls.values()].sort((a, b) => a.start - b.start);
+  callList.forEach(c => { c.mode = toolModes[c.tool] || "?"; });
+  callList.filter(c => !c.endRec && c.cancelAt === null).forEach(c => warnings.push(`call ${c.id} (${c.tool}) never got a result and was never cancelled.`));
+  const okWrites = {};
+  callList.filter(c => c.mode === "W" && c.status === "ok" && !c.stale).forEach(c => (okWrites[c.tool] = okWrites[c.tool] || []).push(c.id));
+  Object.entries(okWrites).forEach(([tool, ids]) => { if (ids.length > 1) warnings.push(`state-modifying tool ${tool} succeeded ${ids.length} times (${ids.join(", ")}): possible duplicate side effect.`); });
+  const unknown = events.filter(r => r.kind === "unknown");
+  if (unknown.length) warnings.push(`${unknown.length} record(s) of unknown type: ${[...new Set(unknown.map(r => r.type || "(none)"))].join(", ")}.`);
+  if (!events.some(r => r.kind === "final")) warnings.push("no final response in the trace.");
+  const times = events.map(r => r.t).concat(callList.flatMap(c => [c.start, c.end ?? c.start]));
+  const t0 = Math.min(0, ...(times.length ? times : [0]));
+  let t1 = Math.max(1, ...(times.length ? times : [1]));
+  events.filter(r => r.kind === "audio").forEach(r => { const d = num(r.body.duration_ms); if (d) t1 = Math.max(t1, r.t + d); });
+  return { meta, recs: events, sorted, calls: callList, snapshots, warnings, t0, t1 };
+}
+
+function diffSnap(a, b) {
+  const out = { intent: false, changed: new Set(), removed: new Set(), any: false };
+  if (!a) { out.intent = b.intent != null; Object.keys(b.slots).forEach(k => out.changed.add(k)); out.any = true; return out; }
+  out.intent = a.intent !== b.intent;
+  for (const k of Object.keys(b.slots)) if (JSON.stringify(a.slots[k]) !== JSON.stringify(b.slots[k])) out.changed.add(k);
+  for (const k of Object.keys(a.slots)) if (!(k in b.slots)) out.removed.add(k);
+  out.any = out.intent || out.changed.size > 0 || out.removed.size > 0;
+  return out;
+}
+
+// ------------------------------------------------------------------------------------------
+// Rendering
+// ------------------------------------------------------------------------------------------
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+function el(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function h(tag, attrs, parent, text) {
+  const e = document.createElement(tag);
+  for (const k in (attrs || {})) e.setAttribute(k, attrs[k]);
+  if (text != null) e.textContent = text;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const fmtT = ms => (ms / 1000).toFixed(3) + " s";
+const clip = (s, n) => (s.length > n ? s.slice(0, Math.max(1, n - 1)) + "…" : s);
+const short = v => { const s = typeof v === "string" ? v : JSON.stringify(v); return s == null ? "" : s; };
+
+const S = { model: null, pxPerMs: 0.1, now: 0, playing: false, speed: 1, items: [], callGeo: [], sel: null, lastFrame: 0, rows: [] };
+const PAD = 20;
+const x = t => PAD + (t - S.model.t0) * S.pxPerMs;
+
+function textOf(r) {
+  const b = r.body;
+  switch (r.kind) {
+    case "text": return short(b.text ?? b.content ?? "");
+    case "audio": return b.transcript ? `♪ "${b.transcript}"` : `♪ audio ${b.clip_id ?? b.path ?? ""}`;
+    case "frame": return `▣ frame ${b.frame_id ?? b.path ?? ""}${Array.isArray(b.labels) && b.labels.length ? " (" + b.labels.map(frameLabel).join(", ") + ")" : ""}`;
+    case "interrupt": return `interrupt${b.reason ? " (" + b.reason + ")" : ""}`;
+    case "manifest": { const n = (b.tools && (Array.isArray(b.tools) ? b.tools.length : Object.keys(b.tools).length)) || 0; return `manifest (${n} tools)`; }
+    case "end": return "session end";
+    case "speak": return short(b.text ?? "");
+    case "clarify": return "? " + short(b.text ?? "");
+    case "final": return "★ " + short(b.text ?? "");
+    case "cancel": return `cancel ${b.call_id}`;
+    case "tool_call": return `${b.tool}(${short(b.args ?? {})})`;
+    case "tool_result": return `${b.tool ?? ""} ${b.call_id} → ${b.status ?? (b.error ? "error" : "ok")}${r.stale ? " (stale)" : ""}`;
+    case "snapshot": return "snapshot";
+    case "sys": return `${r.type}${b.call_id != null ? " " + b.call_id : ""}${b.tool ?? b.name ? " " + (b.tool ?? b.name) : ""}`;
+    default: return r.type || "unknown";
+  }
+}
+function tipOf(r) { return `${fmtT(r.t)}  ${r.dir === "in" ? "event" : r.dir === "out" ? "action" : r.dir}: ${r.type}\n${textOf(r)}`; }
+
+function layoutRows(m) {
+  const rows = [];
+  let y = 0;
+  const add = (id, label, hgt, sub) => { const r = { id, label, sub, y, h: hgt }; rows.push(r); y += hgt; return r; };
+  add("axis", "", 26);
+  add("user", "User", 54, "events");
+  add("agent", "Agent", 54, "actions");
+  if (m.calls.length) m.calls.forEach(c => add("call:" + c.id, c.tool, 26, `${c.id} · ${c.mode === "R" ? "read-only" : c.mode === "W" ? "state-mod" : "?"}`));
+  else add("tools-none", "Tools", 26, "no calls");
+  add("snap", "Snapshots", 28, "changes");
+  add("sys", "System", 34, "manifest, end, other");
+  return { rows, height: y + 8, byId: Object.fromEntries(rows.map(r => [r.id, r])) };
+}
+
+function render() {
+  const m = S.model;
+  const L = layoutRows(m);
+  S.rows = L;
+  const width = Math.max(x(m.t1) + 80, $("scroller").clientWidth);
+  S.width = width;
+  const chart = $("chart"), labels = $("labels");
+  chart.innerHTML = ""; labels.innerHTML = "";
+  chart.setAttribute("width", width); chart.setAttribute("height", L.height);
+  labels.setAttribute("width", "100%"); labels.setAttribute("height", L.height);
+  S.items = []; S.callGeo = [];
+
+  // patterns
+  const defs = el("defs", {}, chart);
+  const pat = el("pattern", { id: "hatch", width: 6, height: 6, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
+  el("rect", { width: 6, height: 6, fill: "var(--stale)", opacity: .35 }, pat);
+  el("line", { x1: 0, y1: 0, x2: 0, y2: 6, stroke: "var(--stale)", "stroke-width": 3 }, pat);
+
+  // row backgrounds + labels
+  L.rows.forEach((r, i) => {
+    if (r.id === "axis") return;
+    el("rect", { class: "row-bg" + (i % 2 ? " alt" : ""), x: 0, y: r.y, width, height: r.h }, chart);
+    el("line", { x1: 0, x2: width, y1: r.y, y2: r.y, stroke: "var(--line)" }, chart);
+    const g = el("g", {}, labels);
+    el("text", { x: 10, y: r.y + (r.sub ? r.h / 2 - 1 : r.h / 2 + 4), "font-weight": r.id.startsWith("call:") ? 400 : 600 }, g, clip(r.label, 20));
+    if (r.sub) el("text", { x: 10, y: r.y + r.h / 2 + 11, class: "lbl", "font-size": 10 }, g, clip(r.sub, 24));
+    el("line", { x1: 0, x2: "100%", y1: r.y, y2: r.y, stroke: "var(--line)" }, labels);
+  });
+
+  // axis + grid
+  const span = m.t1 - m.t0;
+  const target = 110 / S.pxPerMs;
+  const pow = Math.pow(10, Math.floor(Math.log10(target)));
+  const step = [1, 2, 5, 10].map(k => k * pow).find(s => s >= target) || 10 * pow;
+  const dec = step < 10 ? 3 : step < 100 ? 2 : step < 1000 ? 1 : 0;
+  for (let t = Math.ceil(m.t0 / step) * step; t <= m.t0 + span + step; t += step) {
+    const xx = x(t);
+    el("line", { x1: xx, x2: xx, y1: 18, y2: L.height, stroke: "var(--grid)" }, chart);
+    el("text", { x: xx + 3, y: 14, class: "lbl" }, chart, (t / 1000).toFixed(dec) + "s");
+  }
+
+  const userRow = L.byId.user, agentRow = L.byId.agent, sysRow = L.byId.sys, snapRow = L.byId.snap;
+  const laneItems = { user: [], agent: [], sys: [] };
+  for (const r of m.sorted) {
+    if (["text", "audio", "frame", "interrupt"].includes(r.kind)) laneItems.user.push(r);
+    else if (["speak", "clarify", "final"].includes(r.kind)) laneItems.agent.push(r); // cancels are drawn on their call row
+    else if (["manifest", "end", "unknown"].includes(r.kind)) laneItems.sys.push(r);
+  }
+
+  // interrupt lines behind everything else
+  laneItems.user.filter(r => r.kind === "interrupt").forEach(r => {
+    const g = item(r, chart);
+    el("line", { x1: x(r.t), x2: x(r.t), y1: userRow.y, y2: sysRow.y + sysRow.h, stroke: "var(--interrupt)", "stroke-dasharray": "4 3", "stroke-width": 1.5 }, g);
+  });
+
+  drawLane(laneItems.user, userRow, chart);
+  drawLane(laneItems.agent, agentRow, chart);
+  drawLane(laneItems.sys, sysRow, chart);
+
+  // tool calls
+  m.calls.forEach(c => drawCall(c, L.byId["call:" + c.id], chart));
+
+  // snapshot change markers
+  m.snapshots.filter(s => s.isChange).forEach(s => {
+    const g = item(s.rec, chart, s.t, { snap: s });
+    const cx = x(s.t), cy = snapRow.y + snapRow.h / 2;
+    el("path", { d: `M${cx} ${cy - 6} L${cx + 6} ${cy} L${cx} ${cy + 6} L${cx - 6} ${cy} Z`, fill: s.rec.kind === "final" ? "var(--final)" : "var(--panel)", stroke: "var(--snap)", "stroke-width": 1.5 }, g);
+    g.dataset.tip = `${fmtT(s.t)}  snapshot (${s.rec.type})\nintent: ${s.snap.intent}\n${summarizeChange(s)}`;
+  });
+
+  // playhead
+  const ph = el("g", { id: "playhead", "pointer-events": "none" }, chart);
+  el("line", { x1: 0, x2: 0, y1: 18, y2: L.height, stroke: "var(--ink)", "stroke-width": 1.5 }, ph);
+  el("path", { d: "M-5 18 L5 18 L0 25 Z", fill: "var(--ink)" }, ph);
+  applyNow(true);
+}
+
+function item(r, parent, t, extra) {
+  const g = el("g", { class: "item" }, parent);
+  g.dataset.tip = tipOf(r);
+  const it = { g, t: t ?? r.t, rec: r, ...(extra || {}) };
+  g.__item = it;
+  S.items.push(it);
+  return g;
+}
+
+function drawLane(list, row, chart) {
+  const cy = row.y + 17;
+  list.forEach((r, i) => {
+    if (r.kind === "interrupt") {
+      const g = item(r, chart), xx = x(r.t);
+      el("path", { d: `M${xx - 6} ${cy - 7} L${xx + 6} ${cy - 7} L${xx} ${cy + 4} Z`, fill: "var(--interrupt)" }, g);
+      label(g, r, xx + 8, row.y + 44, list, i, "var(--interrupt)");
+      return;
+    }
+    const g = item(r, chart), xx = x(r.t);
+    let color = "var(--user)";
+    if (r.kind === "audio") {
+      const d = num(r.body.duration_ms) || 0;
+      el("rect", { x: xx, y: cy - 6, width: Math.max(12, d * S.pxPerMs), height: 12, rx: 3, fill: "var(--user)", opacity: .25, stroke: "var(--user)" }, g);
+      for (let k = 0; k < 5; k++) el("line", { x1: xx + 3 + k * 2, x2: xx + 3 + k * 2, y1: cy - [2, 4, 3, 5, 2][k], y2: cy + [2, 4, 3, 5, 2][k], stroke: "var(--user)", "stroke-width": 1 }, g);
+    } else if (r.kind === "frame") {
+      el("rect", { x: xx - 6, y: cy - 6, width: 12, height: 12, rx: 2, fill: "var(--panel)", stroke: "var(--user)", "stroke-width": 1.5 }, g);
+      el("rect", { x: xx - 3, y: cy - 3, width: 6, height: 6, fill: "var(--user)" }, g);
+    } else if (r.kind === "text") {
+      el("circle", { cx: xx, cy, r: 5.5, fill: r.body.end_of_turn ? "var(--user)" : "var(--panel)", stroke: "var(--user)", "stroke-width": 1.5 }, g);
+    } else if (r.kind === "speak") {
+      const k = String(r.body.kind ?? "answer");
+      color = k === "filler" ? "var(--filler)" : "var(--agent)";
+      el("rect", { x: xx - 7, y: cy - 5.5, width: 14, height: 11, rx: 5.5, fill: color }, g);
+    } else if (r.kind === "clarify") {
+      color = "var(--clarify)";
+      el("circle", { cx: xx, cy, r: 7, fill: color }, g);
+      el("text", { x: xx, y: cy + 4, "text-anchor": "middle", fill: "var(--panel)", style: "fill:var(--panel);font-weight:700" }, g, "?");
+    } else if (r.kind === "final") {
+      color = "var(--final)";
+      el("path", { d: `M${xx} ${cy - 8} L${xx + 8} ${cy} L${xx} ${cy + 8} L${xx - 8} ${cy} Z`, fill: color }, g);
+    } else if (r.kind === "cancel") {
+      color = "var(--err)";
+      xMark(g, xx, cy, 5, color);
+    } else if (r.kind === "manifest") {
+      color = "var(--muted)";
+      el("rect", { x: xx - 1, y: row.y + 6, width: 3, height: row.h - 12, fill: "var(--muted)" }, g);
+    } else if (r.kind === "end") {
+      color = "var(--muted)";
+      el("rect", { x: xx - 1.5, y: row.y + 4, width: 3, height: row.h - 8, fill: "var(--ink)" }, g);
+    } else {
+      color = "var(--muted)";
+      el("circle", { cx: xx, cy: row.y + row.h / 2, r: 5, fill: "none", stroke: "var(--muted)", "stroke-dasharray": "2 2" }, g);
+    }
+    if (row.id === "sys") label(g, r, xx + 6, row.y + row.h / 2 + 4, list, i, color);
+    else label(g, r, xx + (r.kind === "audio" ? 14 : 9), row.y + 44, list, i, color);
+  });
+}
+
+function label(g, r, lx, ly, list, i, color) {
+  // Truncate so a label never runs into the next item on the same lane.
+  // Items at the same instant: only the last one is labelled (the rest stay in tooltips and the log).
+  if (r.kind === "interrupt" && list.some(o => o !== r && o.kind !== "interrupt" && Math.abs(x(o.t) - x(r.t)) < 60)) return;
+  let nextX = Infinity;
+  for (let j = i + 1; j < list.length; j++) { const nx = x(list[j].t); if (nx <= x(r.t) + 1) return; nextX = nx; break; }
+  const avail = Math.min(nextX - lx - 6, S.width - lx - 4, 420);
+  const chars = Math.floor(avail / 6.2);
+  if (chars < 3) return;
+  const t = el("text", { x: lx, y: ly }, g, clip(textOf(r), chars));
+  if (color && r.kind === "interrupt") t.setAttribute("style", `fill:${color}`);
+}
+
+function xMark(g, cx, cy, s, color) {
+  el("rect", { x: cx - s - 2, y: cy - s - 2, width: 2 * s + 4, height: 2 * s + 4, fill: "transparent" }, g);
+  el("path", { d: `M${cx - s} ${cy - s} L${cx + s} ${cy + s} M${cx + s} ${cy - s} L${cx - s} ${cy + s}`, stroke: color, "stroke-width": 2.2, "stroke-linecap": "round" }, g);
+}
+
+const STATUS_COLOR = { ok: "var(--ok)", error: "var(--err)", timeout: "var(--warn)", cancelled: "var(--stale)", pending: "var(--pending)" };
+
+function drawCall(c, row, chart) {
+  const cy = row.y + row.h / 2;
+  const g = item(c.startRec || c.endRec, chart, c.start, { call: c });
+  g.dataset.tip = callTip(c);
+  const live = el("rect", { x: x(c.start), y: cy - 6, height: 12, width: 0, rx: 2, fill: "var(--pending)" }, g);
+  const tail = el("rect", { x: 0, y: cy - 4, height: 8, width: 0, fill: "url(#hatch)" }, g);
+  el("circle", { cx: x(c.start), cy, r: 3.5, fill: "var(--panel)", stroke: "var(--ink)", "stroke-width": 1.5 }, g);
+  let cancelG = null, endG = null, endLabel = null;
+  if (c.cancelAt !== null) {
+    cancelG = el("g", {}, g);
+    xMark(cancelG, x(c.cancelAt), cy, 5, "var(--err)");
+  }
+  if (c.end !== null) {
+    endG = el("g", {}, g);
+    const col = c.stale ? "var(--stale)" : (STATUS_COLOR[c.status] || "var(--pending)");
+    el("rect", { x: x(c.end) - 4, y: cy - 7, width: 8, height: 14, rx: 1.5, fill: col, stroke: c.stale ? "var(--muted)" : "none" }, endG);
+    const tx = c.stale ? "stale result · ignored" : c.status;
+    endLabel = el("text", { x: x(c.end) + 7, y: cy + 4, class: c.stale ? "lbl" : "" }, endG, tx);
+  }
+  S.callGeo.push({ c, live, tail, cancelG, endG, endLabel });
+}
+
+function callTip(c) {
+  const lines = [`${c.tool} · call ${c.id} · ${c.mode === "R" ? "read-only" : c.mode === "W" ? "state-modifying" : "mode unknown"}`,
+    `args: ${short(c.args)}`, `start ${fmtT(c.start)}`];
+  if (c.retryOf) lines.push(`retry of ${c.retryOf}`);
+  if (c.cancelAt !== null) lines.push(`cancelled ${fmtT(c.cancelAt)} (after ${Math.round(c.cancelAt - c.start)} ms)`);
+  if (c.end !== null) lines.push(`result ${fmtT(c.end)}: ${c.status}${c.stale ? " · STALE (arrived after cancel)" : ""} (${Math.round(c.end - c.start)} ms)`);
+  else if (c.cancelAt === null) lines.push("no result in trace");
+  return lines.join("\n");
+}
+
+function summarizeChange(s) {
+  const parts = [];
+  if (s.changed.intent) parts.push(`intent → ${s.snap.intent}`);
+  s.changed.changed.forEach(k => parts.push(`${k} = ${short(s.snap.slots[k])}`));
+  s.changed.removed.forEach(k => parts.push(`${k} removed`));
+  return parts.join(", ") || "no change";
+}
+
+// ------------------------------------------------------------------------------------------
+// Playback: everything is drawn once; applyNow() reveals items up to the virtual clock.
+// ------------------------------------------------------------------------------------------
+function applyNow(force) {
+  const m = S.model, now = S.now;
+  const ph = $("playhead");
+  if (ph) ph.setAttribute("transform", `translate(${x(now)},0)`);
+  for (const it of S.items) {
+    const fut = it.t > now + 1e-6;
+    if (force || it.fut !== fut) { it.g.classList.toggle("future", fut); it.fut = fut; }
+  }
+  for (const cg of S.callGeo) {
+    const c = cg.c;
+    const solidEnd = Math.min(now, c.cancelAt ?? Infinity, c.end ?? Infinity, c.end === null && c.cancelAt === null ? m.t1 : Infinity);
+    const w = Math.max(0, solidEnd - c.start) * S.pxPerMs;
+    cg.live.setAttribute("width", w);
+    const done = c.end !== null && now >= c.end;
+    const cancelled = c.cancelAt !== null && now >= c.cancelAt;
+    cg.live.setAttribute("fill", cancelled ? "var(--stale)" : done ? (STATUS_COLOR[c.status] || "var(--pending)") : "var(--pending)");
+    cg.live.setAttribute("opacity", done || cancelled ? 0.55 : 0.85);
+    if (c.cancelAt !== null && c.end !== null && c.end > c.cancelAt) {
+      const tEnd = Math.min(now, c.end);
+      cg.tail.setAttribute("x", x(c.cancelAt));
+      cg.tail.setAttribute("width", Math.max(0, tEnd - c.cancelAt) * S.pxPerMs);
+    }
+    if (cg.cancelG) cg.cancelG.style.opacity = now >= c.cancelAt ? 1 : FUTURE_OPACITY;
+    if (cg.endG) cg.endG.style.opacity = now >= c.end ? 1 : FUTURE_OPACITY;
+  }
+  $("clock").textContent = `${fmtT(now)} / ${fmtT(m.t1)}`;
+  const scrub = $("scrub");
+  if (document.activeElement !== scrub || S.playing) scrub.value = Math.round((now - m.t0) / (m.t1 - m.t0) * 1000);
+  updateNowPanel();
+  updateSnapCards();
+  updateLog();
+}
+const FUTURE_OPACITY = 0.16;
+
+function latest(pred) {
+  let found = null;
+  for (const r of S.model.sorted) { if (r.t > S.now) break; if (pred(r)) found = r; }
+  return found;
+}
+
+function updateNowPanel() {
+  const u = latest(r => ["text", "audio", "frame", "interrupt"].includes(r.kind));
+  const a = latest(r => ["speak", "clarify", "final"].includes(r.kind));
+  $("nowUser").textContent = u ? `${textOf(u)}  · ${fmtT(u.t)}` : " ";
+  $("nowAgent").textContent = a ? `${a.kind === "speak" ? "[" + (a.body.kind ?? "answer") + "] " : ""}${textOf(a)}  · ${fmtT(a.t)}` : " ";
+  const inflight = S.model.calls.filter(c => c.start <= S.now && (c.end === null || c.end > S.now) && (c.cancelAt === null || c.cancelAt > S.now));
+  $("nowTools").textContent = inflight.length ? inflight.map(c => `${c.tool} (${c.id}, ${Math.round(S.now - c.start)} ms)`).join(", ") : "none";
+  const s = currentSnap();
+  $("nowSnap").textContent = s ? `${s.snap.intent ?? "no intent"} · ${Object.entries(s.snap.slots).map(([k, v]) => `${k}=${short(v)}`).join(", ") || "no slots"}` : " ";
+}
+
+function currentSnap() {
+  let cur = null;
+  for (const s of S.model.snapshots) { if (s.t > S.now) break; cur = s; }
+  return cur;
+}
+
+function tick(ts) {
+  if (!S.playing) return;
+  const dt = S.lastFrame ? ts - S.lastFrame : 0;
+  S.lastFrame = ts;
+  S.now = Math.min(S.model.t1, S.now + dt * S.speed);
+  applyNow(false);
+  followPlayhead();
+  if (S.now >= S.model.t1) { setPlaying(false); return; }
+  requestAnimationFrame(tick);
+}
+function followPlayhead() {
+  const sc = $("scroller"), px = x(S.now);
+  if (px < sc.scrollLeft + 40 || px > sc.scrollLeft + sc.clientWidth - 60) sc.scrollLeft = Math.max(0, px - sc.clientWidth * 0.25);
+}
+function setPlaying(p) {
+  if (p && S.now >= S.model.t1 - 1) S.now = S.model.t0;
+  S.playing = p;
+  $("playBtn").textContent = p ? "Pause" : "Play";
+  if (p) { S.lastFrame = 0; requestAnimationFrame(tick); }
+}
+function seek(t) { S.now = Math.max(S.model.t0, Math.min(S.model.t1, t)); applyNow(false); followPlayhead(); }
+
+// ------------------------------------------------------------------------------------------
+// Panels: snapshots, detail, log, warnings
+// ------------------------------------------------------------------------------------------
+function renderSnapCards() {
+  const box = $("snaps"); box.innerHTML = "";
+  const all = $("allSnaps").checked;
+  const list = S.model.snapshots.filter(s => all || s.isChange || s.rec.kind === "final");
+  if (!list.length) { h("div", { class: "t", style: "padding:8px" }, box, "No state snapshots in this trace."); return; }
+  list.forEach(s => {
+    const d = h("details", { class: "snap" }, box);
+    s.card = d;
+    const sum = h("summary", {}, d);
+    h("span", { class: "t" }, sum, fmtT(s.t));
+    h("span", { class: "tag" }, sum, s.rec.type);
+    h("b", {}, sum, s.snap.intent ?? "no intent");
+    if (s.isChange) h("span", { class: "chg" }, sum, clip(summarizeChange(s), 80));
+    else h("span", { class: "t" }, sum, "unchanged");
+    sum.addEventListener("click", () => { seek(s.t); select(s.rec, { snap: s }); });
+    const tbl = h("table", {}, d);
+    const hr = h("tr", {}, tbl); h("th", {}, hr, "slot"); h("th", {}, hr, "value"); h("th", {}, hr, "before");
+    const keys = [...new Set([...Object.keys(s.snap.slots), ...s.changed.removed])];
+    const ir = h("tr", {}, tbl); h("td", {}, ir, "intent");
+    h("td", s.changed.intent ? { class: "changed" } : {}, ir, short(s.snap.intent));
+    h("td", { class: "t" }, ir, s.prev ? short(s.prev.intent) : "");
+    keys.forEach(k => {
+      const tr = h("tr", {}, tbl);
+      h("td", {}, tr, k);
+      const removed = s.changed.removed.has(k);
+      h("td", { class: removed ? "removed" : s.changed.changed.has(k) ? "changed" : "" }, tr, removed ? short(s.prev.slots[k]) : short(s.snap.slots[k]));
+      h("td", { class: "t" }, tr, s.prev && k in s.prev.slots ? short(s.prev.slots[k]) : "");
+    });
+  });
+}
+function updateSnapCards() {
+  const cur = currentSnap();
+  let curCard = null;
+  for (const s of S.model.snapshots) {
+    if (!s.card) continue;
+    s.card.classList.toggle("future", s.t > S.now);
+    s.card.classList.remove("current");
+    if (s.t <= S.now) curCard = s.card;
+  }
+  if (curCard && cur) curCard.classList.add("current");
+}
+
+function select(rec, extra) {
+  S.items.forEach(it => it.g.classList.toggle("sel", it.rec === rec && (!extra || !extra.snap || it.snap === extra.snap)));
+  const box = $("detail"); box.innerHTML = "";
+  h("h2", {}, box, "Selected item");
+  const info = [];
+  if (extra && extra.call) info.push(callTip(extra.call));
+  else if (rec) info.push(`${fmtT(rec.t)} · line ${rec.line} · ${rec.dir} · ${rec.type}${rec.stale ? " · STALE" : ""}${rec.outOfOrder ? " · out of order" : ""}${rec.noTime ? " · no timestamp" : ""}`);
+  if (extra && extra.snap) info.push(`snapshot: ${summarizeChange(extra.snap)}`);
+  h("div", { class: "hint", style: "white-space:pre-wrap;color:var(--ink)" }, box, info.join("\n"));
+  const raws = extra && extra.call ? [extra.call.startRec, extra.call.cancelRec, extra.call.endRec].filter(Boolean) : rec ? [rec] : [];
+  raws.forEach(r => h("pre", {}, box, `// line ${r.line}\n` + JSON.stringify(r.raw, null, 2)));
+  S.logRows && S.logRows.forEach(({ tr, r }) => tr.classList.toggle("sel", raws.includes(r)));
+}
+
+function renderLog() {
+  const box = $("log"); box.innerHTML = "";
+  const tbl = h("table", {}, box);
+  const hr = h("tr", {}, tbl);
+  ["time", "line", "dir", "type", "summary"].forEach(t => h("th", {}, hr, t));
+  S.logRows = S.model.sorted.map(r => {
+    const tr = h("tr", {}, tbl);
+    h("td", {}, tr, fmtT(r.t));
+    h("td", { class: "t" }, tr, String(r.line));
+    h("td", { class: "t" }, tr, r.dir);
+    h("td", {}, tr, r.type || "?");
+    h("td", {}, tr, clip(textOf(r), 140));
+    tr.addEventListener("click", () => { seek(r.t); select(r, r.kind === "tool_call" || r.kind === "tool_result" ? { call: callFor(r) } : null); });
+    return { tr, r };
+  });
+}
+function callFor(r) { return S.model.calls.find(c => c.startRec === r || c.endRec === r || c.cancelRec === r) || null; }
+function updateLog() {
+  if (!S.logRows) return;
+  let cur = null;
+  S.logRows.forEach(o => { const fut = o.r.t > S.now; o.tr.classList.toggle("future", fut); o.tr.classList.remove("cur"); if (!fut) cur = o; });
+  if (cur) {
+    cur.tr.classList.add("cur");
+    if (S.playing) { const box = $("log"); const top = cur.tr.offsetTop; if (top < box.scrollTop || top > box.scrollTop + box.clientHeight - 30) box.scrollTop = top - box.clientHeight / 2; }
+  }
+}
+
+function renderWarnings() {
+  const ul = $("warnList"); ul.innerHTML = "";
+  const w = S.model.warnings;
+  if (!w.length) h("li", {}, ul, "No issues found.");
+  w.forEach(t => h("li", {}, ul, t));
+}
+
+function renderLegend() {
+  const lg = $("legend"); lg.innerHTML = "";
+  [["var(--user)", "user text / audio / frame"], ["var(--interrupt)", "interrupt"], ["var(--filler)", "filler"], ["var(--agent)", "spoken answer"],
+   ["var(--clarify)", "clarify"], ["var(--final)", "final response"], ["var(--pending)", "tool in flight"], ["var(--ok)", "ok"],
+   ["var(--err)", "error / cancel ✕"], ["var(--warn)", "timeout"], ["var(--stale)", "cancelled / stale result"], ["var(--snap)", "snapshot change"]]
+    .forEach(([c, t]) => { const s = h("span", {}, lg); h("i", { style: `background:${c}` }, s); s.appendChild(document.createTextNode(t)); });
+}
+
+// ------------------------------------------------------------------------------------------
+// Loading and wiring
+// ------------------------------------------------------------------------------------------
+function load(text, name) {
+  const m = buildModel(text);
+  if (!m.recs.length) { alert("No trace records found." + (m.warnings.length ? "\n" + m.warnings.slice(0, 5).join("\n") : "")); return false; }
+  S.model = m;
+  S.sel = null;
+  $("empty").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  const md = m.meta ? m.meta.body : {};
+  const calls = m.calls.length, stale = m.calls.filter(c => c.stale).length, cancels = m.calls.filter(c => c.cancelAt !== null).length;
+  $("meta").textContent = `${name || "trace"}${md.scenario_id ? " · " + md.scenario_id : ""} · ${m.recs.length} records · ${calls} tool calls · ${cancels} cancelled · ${stale} stale results · ${m.snapshots.length} snapshots`;
+  document.title = `Trace Timeline · ${md.scenario_id || name || "trace"}`;
+  fit(false);
+  S.now = m.t1;
+  render();
+  renderSnapCards(); renderLog(); renderWarnings(); renderLegend();
+  applyNow(true);
+  return true;
+}
+function fit(rerender = true) {
+  const w = Math.max(300, $("scroller").clientWidth || 800);
+  S.pxPerMs = (w - PAD - 90) / Math.max(1, S.model.t1 - S.model.t0);
+  if (rerender) render();
+}
+function zoom(f) {
+  const sc = $("scroller"), centerT = S.model.t0 + (sc.scrollLeft + sc.clientWidth / 2 - PAD) / S.pxPerMs;
+  S.pxPerMs = Math.max(0.005, Math.min(20, S.pxPerMs * f));
+  render();
+  sc.scrollLeft = Math.max(0, x(centerT) - sc.clientWidth / 2);
+}
+function stepRecord(dir) {
+  const ts = [...new Set(S.model.sorted.map(r => r.t))];
+  const t = dir > 0 ? ts.find(v => v > S.now + 1e-6) : [...ts].reverse().find(v => v < S.now - 1e-6);
+  if (t !== undefined) seek(t);
+}
+function readFile(f) { const rd = new FileReader(); rd.onload = () => load(String(rd.result), f.name); rd.readAsText(f); }
+function sampleText() { return $("sample-trace").textContent.replace("<!--SAMPLE-->", "").trim(); }
+
+$("openBtn").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", e => { if (e.target.files[0]) readFile(e.target.files[0]); e.target.value = ""; });
+$("sampleBtn").addEventListener("click", () => { const t = sampleText(); if (t) load(t, "sample_trace.jsonl"); else alert("No sample embedded."); });
+$("pasteBtn").addEventListener("click", () => load($("pastebox").value, "pasted"));
+$("themeBtn").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  root.dataset.theme = dark ? "light" : "dark";
+});
+$("playBtn").addEventListener("click", () => setPlaying(!S.playing));
+$("restartBtn").addEventListener("click", () => { setPlaying(false); seek(S.model.t0); });
+$("speed").addEventListener("change", e => { S.speed = +e.target.value; });
+$("scrub").addEventListener("input", e => { setPlaying(false); seek(S.model.t0 + (+e.target.value / 1000) * (S.model.t1 - S.model.t0)); });
+$("zoomIn").addEventListener("click", () => zoom(1.6));
+$("zoomOut").addEventListener("click", () => zoom(1 / 1.6));
+$("zoomFit").addEventListener("click", () => fit(true));
+$("allSnaps").addEventListener("change", () => { renderSnapCards(); updateSnapCards(); });
+$("scroller").addEventListener("wheel", e => { if (S.model && (e.ctrlKey || e.metaKey)) { e.preventDefault(); zoom(e.deltaY < 0 ? 1.2 : 1 / 1.2); } }, { passive: false });
+
+const tip = $("tip");
+$("chart").addEventListener("mousemove", e => {
+  const g = e.target.closest(".item");
+  if (!g) { tip.style.display = "none"; return; }
+  tip.textContent = g.dataset.tip; tip.style.display = "block";
+  const tx = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = tx + "px"; tip.style.top = (e.clientY + 14) + "px";
+});
+$("chart").addEventListener("mouseleave", () => { tip.style.display = "none"; });
+$("chart").addEventListener("click", e => {
+  const g = e.target.closest(".item");
+  if (!g) { const r = $("chart").getBoundingClientRect(); seek(S.model.t0 + (e.clientX - r.left - PAD) / S.pxPerMs); return; }
+  const it = g.__item;
+  if (it.snap && it.snap.card) { it.snap.card.open = true; it.snap.card.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+  select(it.rec, it.call ? { call: it.call } : it.snap ? { snap: it.snap } : null);
+});
+
+document.addEventListener("keydown", e => {
+  if (!S.model || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && document.activeElement.type !== "range") return;
+  if (e.key === " ") { e.preventDefault(); setPlaying(!S.playing); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); setPlaying(false); stepRecord(1); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); setPlaying(false); stepRecord(-1); }
+  else if (e.key === "Home") { setPlaying(false); seek(S.model.t0); }
+  else if (e.key === "End") { setPlaying(false); seek(S.model.t1); }
+  else if (e.key === "+" || e.key === "=") zoom(1.6);
+  else if (e.key === "-") zoom(1 / 1.6);
+  else if (e.key === "f" || e.key === "F") fit(true);
+});
+
+["dragenter", "dragover"].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); document.body.classList.add("dragging"); }));
+["dragleave", "drop"].forEach(ev => document.addEventListener(ev, e => { e.preventDefault(); if (ev === "drop" || !e.relatedTarget) document.body.classList.remove("dragging"); }));
+document.addEventListener("drop", e => { const f = e.dataTransfer && e.dataTransfer.files[0]; if (f) readFile(f); });
+
+let resizeT;
+addEventListener("resize", () => { if (!S.model) return; clearTimeout(resizeT); resizeT = setTimeout(() => render(), 150); });
+
+// ?trace=<url> works when the page is served over http (file:// blocks fetch in most browsers).
+(function boot() {
+  const q = new URLSearchParams(location.search);
+  const url = q.get("trace");
+  if (url) fetch(url).then(r => r.ok ? r.text() : Promise.reject(r.status)).then(t => load(t, url.split("/").pop())).catch(err => alert(`Could not fetch ${url}: ${err}`));
+  else if (q.has("sample")) $("sampleBtn").click();
+})();
+
+// Test hook (used by test_viewer.py through a headless browser).
+window.TraceViewer = { buildModel, load, seek, state: S };
+</script>
+</body>
+</html>

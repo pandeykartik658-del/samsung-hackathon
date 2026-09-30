@@ -3,6 +3,47 @@
 
 Samsung PRISM GenAI Hackathon 2026, Theme 05. A voice/text/vision assistant that keeps working while the user interrupts, corrects themselves, or changes their mind mid-task, without losing state, repeating side effects, or going silent.
 
+## Submission
+
+| | |
+|---|---|
+| Hackathon | Samsung PRISM GenAI Hackathon 2026 (3rd edition) |
+| Theme | 05, Interruptible Real-Time Agents |
+| Team | `TODO: CollegeName_TeamName` |
+| Members | `TODO: name, year and branch for each member (max 4)` |
+| Release tag | [`PRISM_GENAI_HACKATHON_Y2026`](https://github.com/pandeykartik658-del/samsung-hackathon/releases/tag/PRISM_GENAI_HACKATHON_Y2026) (the tagged commit is the one judged) |
+| Presentation | [`submission/Theme05_Jury_Deck.pptx`](submission/Theme05_Jury_Deck.pptx) (PDF copy: [`submission/Theme05_Jury_Deck.pdf`](submission/Theme05_Jury_Deck.pdf)) |
+| Demo video (in repo) | [`submission/Theme05_Demo.mp4`](submission/Theme05_Demo.mp4), 4:30, 1080p, burned-in captions ([`.srt`](submission/Theme05_Demo_captions.srt)) |
+| Demo video (YouTube/Drive) | `TODO: paste the YouTube (unlisted) or Google Drive link here` |
+| Video script | [`submission/DEMO_VIDEO_SCRIPT.md`](submission/DEMO_VIDEO_SCRIPT.md); the trace pages it shows are in [`submission/viewer/`](submission/viewer/) (open in a browser, press Play) |
+| Docker | [`Dockerfile`](Dockerfile), built and tested on every push by [`.github/workflows/docker.yml`](.github/workflows/docker.yml) |
+| Requirements | [`requirements.txt`](requirements.txt) (pinned runtime), [`requirements-dev.txt`](requirements-dev.txt) (tests) |
+
+Everything the submission references (code, requirements, Docker files, deck, video, docs) is in the tagged commit. The video is 6 MB, so it is committed directly; the external link is only a convenience for the Google Form.
+
+### Quick start
+
+Requirements: Python 3.10, 3.11 or 3.12 and `make` (Linux/macOS), or Docker. No GPU, no API keys, no network at run time.
+
+```bash
+git clone --branch PRISM_GENAI_HACKATHON_Y2026 https://github.com/pandeykartik658-del/samsung-hackathon.git
+cd samsung-hackathon
+
+# Option A: local virtualenv
+make venv install        # creates .venv and installs requirements.txt + requirements-dev.txt
+make models              # optional: Whisper base.en weights into ./models (needs Hugging Face access)
+make test                # full pytest suite
+bash run_demo.sh         # 9 scenarios + 60-scenario bench + trace viewer, output in runs/demo/
+
+# Option B: Docker (everything baked in, runs offline)
+docker build -t theme5 .
+docker run --rm theme5                                # demo
+docker run --rm theme5 python -m pytest -q tests viewer   # test suite
+docker run --rm -i theme5 python -m theme5 serve      # JSONL events on stdin, actions on stdout
+```
+
+Without `make`: `python3 -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt -r requirements-dev.txt`, then `python -m pytest -q tests viewer` and `bash run_demo.sh`.
+
 ## Problem
 
 A real-time assistant receives a stream of timestamped events (text chunks, WAV clips, PNG frames, interruptions, asynchronous tool results) and must answer on a second stream with spoken fillers, non-blocking tool calls, cancellations, clarifying questions and final responses that carry a State Snapshot (intent + slots). The hard parts are the ones a turn-based chatbot never meets:
@@ -126,6 +167,8 @@ tests/             pytest suite
 docs/              SPEC, ARCHITECTURE, PLAN, MULTIMODAL, SLOTS_INTEGRATION
 scripts/           fetch_models.py (Whisper download + offline smoke load)
 models/            Whisper weights (git-ignored; filled by `make models` or the Docker build)
+submission/        jury deck (.pptx + .pdf), demo video (.mp4 + .srt), video script, demo trace pages
+.github/workflows/ docker.yml: build the image, real-weight Whisper test, full tests, demo on every push
 ```
 
 ## Evaluation adapter
@@ -204,7 +247,7 @@ Check that the kit's Safety & Protocol score is full on the 9 public scenarios b
 - **Unreleased kit.** All 26 wire-format unknowns are guesses. The adapter confines the fix to one file, but until the kit ships the protocol score is unverified.
 - **Self-graded numbers.** The 60-scenario bench scores 100.0 against our own scorer on scenarios we generated. Hidden scenarios will be harder; treat the number as a regression guard, not a forecast.
 - **Placeholder media.** WAV/PNG files in `scenarios/` and `bench/` are tone bursts and coloured boxes, so `--strip-oracle` on them scores the fallback (clarifying questions), not perception. `bench/real_media.py` rebuilds the suite with synthetic speech and text-bearing frames for that; real kit audio (accents, noise) and photos will be harder, and frames with no printed text still need the kit's labels or a vision model.
-- **Whisper not run against real weights in development** (Hugging Face was unreachable from the dev container). The Docker build downloads and smoke-loads them; run the opt-in Whisper test in the image before submitting.
+- **Whisper verified only in CI.** Hugging Face is unreachable from the dev container, so real-weight Whisper runs in the Docker image on GitHub Actions (`.github/workflows/docker.yml`, test `test_faster_whisper_real_model`) rather than locally.
 - **Sibling modules not yet wired into `agent.py`:** `fastpath.py` and `slots.py` are implemented and tested but the agent still uses its built-in equivalents (`docs/PLAN.md`, next steps). Perception is wired: the agent defaults to `multimodal.HybridPerception` (kit hints first, then Whisper/OCR).
 - **English only.** NLU rules, number and date parsing assume English.
 
@@ -229,9 +272,12 @@ Check that the kit's Safety & Protocol score is full on the 9 public scenarios b
 
 ## Submission checklist
 
-- Tag the release `PRISM_GENAI_HACKATHON_Y2026` (PRISM rules).
-- `docker build` on a machine with Hugging Face access, then `docker run --rm -e THEME5_TEST_WHISPER=1 theme5 python -m pytest -q tests/test_multimodal.py`.
-- Fill the kit's scores into this README once available.
+- [x] Code, `requirements.txt`, Dockerfile and README in the repo; Docker build, tests and demo run in CI on every push.
+- [x] Presentation and demo video committed under `submission/`.
+- [x] Release tag `PRISM_GENAI_HACKATHON_Y2026` on the final commit.
+- [ ] Team name, college and members filled in above and on slide 1 of the deck; deck renamed `CollegeName_TeamName.pptx` for the Google Form.
+- [ ] Demo video uploaded (YouTube unlisted or Drive) and the link added above and on slides 5 and 11.
+- [ ] Fill the kit's scores into this README once the kit is released.
 
 ## License
 
