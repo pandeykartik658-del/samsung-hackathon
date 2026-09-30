@@ -1,0 +1,198 @@
+{
+ "id": "g57_visual_frame_switch",
+ "modality": "visual",
+ "title": "frame switch #1",
+ "family": "frame_switch",
+ "description": "User switches device mid-lookup (new frame + barge-in); stale lookup must be cancelled.",
+ "duration_ms": 21039,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "manual_lookup",
+   "create_ticket"
+  ],
+  "config": {
+   "manual_lookup": {
+    "latency_ms": 2500,
+    "fixtures": [
+     {
+      "match": {
+       "device_model": {
+        "any_of": [
+         "DV90T",
+         "dryer"
+        ]
+       }
+      },
+      "response": {
+       "device_model": "DV90T",
+       "section": "Error HE: heating",
+       "steps": [
+        "Check the lint filter.",
+        "Check the vent.",
+        "Check the restart."
+       ]
+      }
+     },
+     {
+      "match": {
+       "device_model": {
+        "any_of": [
+         "QN55Q80",
+         "TV"
+        ]
+       }
+      },
+      "response": {
+       "device_model": "QN55Q80",
+       "section": "No signal",
+       "steps": [
+        "Check the input.",
+        "Check the HDMI.",
+        "Check the cable."
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "video_frame",
+   "frame_id": "g57_visual_frame_switch_f1",
+   "path": "assets/g57_visual_frame_switch_f1.png",
+   "width": 160,
+   "height": 120,
+   "labels": [
+    {
+     "label": "dryer",
+     "model": "DV90T",
+     "confidence": 0.92,
+     "text": "HE"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "t_ms": 200,
+   "type": "text_chunk",
+   "text": "How do I clear this error?",
+   "end_of_turn": true
+  },
+  {
+   "id": "e3",
+   "t_ms": 961,
+   "type": "interrupt",
+   "reason": "barge_in"
+  },
+  {
+   "id": "e4",
+   "t_ms": 977,
+   "type": "video_frame",
+   "frame_id": "g57_visual_frame_switch_f4",
+   "path": "assets/g57_visual_frame_switch_f4.png",
+   "width": 160,
+   "height": 120,
+   "labels": [
+    {
+     "label": "TV",
+     "model": "QN55Q80",
+     "confidence": 0.94,
+     "text": "NO SIGNAL"
+    }
+   ]
+  },
+  {
+   "id": "e5",
+   "t_ms": 1039,
+   "type": "text_chunk",
+   "text": "Sorry, wrong one, I meant this TV.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "QN55Q80",
+       "TV"
+      ]
+     },
+     "query": {
+      "regex": "NO\\s*SIGNAL"
+     }
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "manual_lookup",
+    "after_event": "e5",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "DV90T",
+       "dryer"
+      ]
+     }
+    }
+   },
+   {
+    "tool": "create_ticket"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "troubleshoot",
+     "troubleshoot_device",
+     "manual_lookup",
+     "lookup_manual"
+    ]
+   },
+   "slots": {
+    "device_model": {
+     "any_of": [
+      "QN55Q80",
+      "TV"
+     ]
+    }
+   }
+  },
+  "must_cancel": [
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "DV90T",
+       "dryer"
+      ]
+     }
+    },
+    "anchor_event": "e3"
+   }
+  ],
+  "final_text": {
+   "includes_any": [
+    "input",
+    "HDMI",
+    "cable"
+   ],
+   "excludes": [
+    "Error HE: heating"
+   ]
+  }
+ }
+}

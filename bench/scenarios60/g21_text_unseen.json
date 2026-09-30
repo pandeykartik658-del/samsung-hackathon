@@ -1,0 +1,95 @@
+{
+ "id": "g21_text_unseen",
+ "modality": "text",
+ "title": "unseen #3",
+ "family": "unseen",
+ "description": "Unseen tool with list-style parameter schema and PascalCase names.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search"
+  ],
+  "config": {},
+  "extra": [
+   {
+    "name": "renewLicence",
+    "description": "Renew a driving licence. Charges the fee.",
+    "mutating": true,
+    "parameters": {
+     "type": "object",
+     "required": [
+      "LicenceNumber",
+      "yrs"
+     ],
+     "properties": {
+      "LicenceNumber": {
+       "type": "string"
+      },
+      "yrs": {
+       "type": "integer",
+       "enum": [
+        1,
+        5
+       ]
+      }
+     }
+    },
+    "mock": {
+     "latency_ms": 900,
+     "response": {
+      "receipt": "RCPT-8812",
+      "valid_until": "2031-09-29"
+     }
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Renew my driving licence KA743309996 for one year.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "renewLicence",
+    "args": {
+     "LicenceNumber": "KA743309996",
+     "yrs": 1
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "renewLicence"
+    ]
+   },
+   "slots": {
+    "LicenceNumber": "KA743309996"
+   }
+  },
+  "max_write_calls": {
+   "renewLicence": 1
+  },
+  "final_mentions": [
+   "RCPT-8812"
+  ]
+ }
+}

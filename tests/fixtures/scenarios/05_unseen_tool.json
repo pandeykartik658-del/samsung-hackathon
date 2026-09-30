@@ -1,0 +1,59 @@
+{
+ "id": "05_unseen_tool",
+ "modality": "text",
+ "tools": [
+  {
+   "name": "get_weather_forecast",
+   "description": "Weather forecast for a city",
+   "read_only": true,
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "city": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "city"
+    ]
+   },
+   "mock": {
+    "latency_ms": 300,
+    "response": {
+     "summary": "Light rain",
+     "temp_c": 27
+    }
+   }
+  }
+ ],
+ "events": [
+  {
+   "t": 0,
+   "type": "text",
+   "text": "what's the weather forecast looking like",
+   "end_of_turn": true
+  },
+  {
+   "t": 800,
+   "type": "text",
+   "text": "Chennai",
+   "end_of_turn": true
+  }
+ ],
+ "expect": {
+  "calls": [
+   {
+    "tool": "get_weather_forecast",
+    "args": {
+     "city": "Chennai"
+    }
+   }
+  ],
+  "final": {
+   "intent": "get_weather_forecast",
+   "slots": {
+    "city": "Chennai"
+   }
+  }
+ }
+}

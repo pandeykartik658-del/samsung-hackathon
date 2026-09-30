@@ -1,0 +1,106 @@
+{
+  "id": "s08_audio_cancel_everything",
+  "modality": "audio",
+  "title": "User cancels everything mid-task (audio)",
+  "description": "A search-then-book task is under way when the user says to stop. The in-flight search must be cancelled, nothing booked, and the snapshot cleared.",
+  "duration_ms": 20000,
+  "session": {
+    "reference_date": "2026-09-29",
+    "locale": "en-IN",
+    "timezone": "Asia/Kolkata"
+  },
+  "cancel_grace_ms": 300,
+  "tools": {
+    "enabled": [
+      "flight_search",
+      "book_flight"
+    ],
+    "config": {
+      "flight_search": {
+        "latency_ms": 3000
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t_ms": 0,
+      "type": "audio_clip",
+      "clip_id": "s08_c1",
+      "path": "assets/s08_c1.wav",
+      "sample_rate": 16000,
+      "duration_ms": 2600,
+      "end_of_turn": true,
+      "transcript": "Search flights from Chennai to Kolkata on October 22nd and book the earliest one for Anil Kumar."
+    },
+    {
+      "id": "e2",
+      "t_ms": 1500,
+      "type": "interrupt",
+      "reason": "barge_in"
+    },
+    {
+      "id": "e3",
+      "t_ms": 1500,
+      "type": "audio_clip",
+      "clip_id": "s08_c2",
+      "path": "assets/s08_c2.wav",
+      "sample_rate": 16000,
+      "duration_ms": 1400,
+      "end_of_turn": true,
+      "transcript": "Stop. Cancel all of that, never mind."
+    }
+  ],
+  "expected": {
+    "required_calls": [
+      {
+        "tool": "flight_search",
+        "args": {
+          "origin": {
+            "any_of": [
+              "MAA",
+              "Chennai"
+            ]
+          },
+          "destination": {
+            "any_of": [
+              "CCU",
+              "Kolkata"
+            ]
+          },
+          "date": "2026-10-22"
+        },
+        "status": "any",
+        "max_count": 1
+      }
+    ],
+    "forbidden_calls": [
+      {
+        "tool": "book_flight"
+      },
+      {
+        "tool": "flight_search",
+        "after_event": "e3"
+      }
+    ],
+    "must_cancel": [
+      {
+        "tool": "flight_search",
+        "anchor_event": "e2"
+      }
+    ],
+    "max_writes": {
+      "book_flight": 0
+    },
+    "final_snapshot": {
+      "intent": {
+        "any_of": [
+          null,
+          "cancel",
+          "cancelled",
+          "none"
+        ]
+      }
+    }
+  }
+}

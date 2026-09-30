@@ -1,0 +1,78 @@
+{
+ "id": "03_text_ticket_retry",
+ "modality": "text",
+ "tools": [
+  {
+   "name": "create_support_ticket",
+   "description": "Open a customer support ticket",
+   "state_modifying": true,
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "customer_name": {
+      "type": "string"
+     },
+     "device": {
+      "type": "string"
+     },
+     "description": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "customer_name",
+     "description"
+    ]
+   },
+   "mock": {
+    "latency_ms": 600,
+    "response": {
+     "ticket_id": "T-7781",
+     "status": "open"
+    },
+    "faults": [
+     {
+      "attempt": 1,
+      "error": "timeout",
+      "retryable": true
+     }
+    ]
+   }
+  }
+ ],
+ "events": [
+  {
+   "t": 0,
+   "type": "text",
+   "text": "My washing machine stopped working, please raise a support ticket.",
+   "end_of_turn": true
+  },
+  {
+   "t": 900,
+   "type": "text",
+   "text": "Asha Verma",
+   "end_of_turn": true
+  }
+ ],
+ "expect": {
+  "calls": [
+   {
+    "tool": "create_support_ticket",
+    "args": {
+     "customer_name": "Asha Verma",
+     "device": "washing machine"
+    }
+   }
+  ],
+  "final": {
+   "intent": "create_support_ticket",
+   "slots": {
+    "customer_name": "Asha Verma",
+    "device": "washing machine"
+   }
+  },
+  "max_commits": {
+   "create_support_ticket": 1
+  }
+ }
+}

@@ -1,0 +1,165 @@
+{
+  "id": "s04_text_retry_after_error",
+  "modality": "text",
+  "title": "Retry after a transient tool error",
+  "description": "The first flight_search returns a 503 error. The agent should keep the user informed, retry the read-only call a bounded number of times, and answer from the successful result.",
+  "duration_ms": 20000,
+  "session": {
+    "reference_date": "2026-09-29",
+    "locale": "en-IN",
+    "timezone": "Asia/Kolkata"
+  },
+  "tools": {
+    "enabled": [
+      "flight_search",
+      "book_flight"
+    ],
+    "config": {
+      "flight_search": {
+        "latency_ms": 1000,
+        "faults": [
+          {
+            "call_index": 1,
+            "kind": "error",
+            "error": "503 upstream_unavailable",
+            "latency_ms": 600
+          }
+        ],
+        "fixtures": [
+          {
+            "match": {
+              "origin": {
+                "any_of": [
+                  "CCU",
+                  "Kolkata"
+                ]
+              },
+              "destination": {
+                "any_of": [
+                  "DEL",
+                  "Delhi"
+                ]
+              }
+            },
+            "response": {
+              "flights": [
+                {
+                  "flight_id": "AI-763",
+                  "origin": "CCU",
+                  "destination": "DEL",
+                  "date": "2026-11-02",
+                  "depart": "06:05",
+                  "price_inr": 5480
+                },
+                {
+                  "flight_id": "6E-2257",
+                  "origin": "CCU",
+                  "destination": "DEL",
+                  "date": "2026-11-02",
+                  "depart": "14:50",
+                  "price_inr": 4990
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t_ms": 0,
+      "type": "text_chunk",
+      "text": "What flights are there from Kolkata to Delhi on November 2nd?",
+      "end_of_turn": true
+    }
+  ],
+  "expected": {
+    "required_calls": [
+      {
+        "tool": "flight_search",
+        "args": {
+          "origin": {
+            "any_of": [
+              "CCU",
+              "Kolkata"
+            ]
+          },
+          "destination": {
+            "any_of": [
+              "DEL",
+              "Delhi"
+            ]
+          },
+          "date": "2026-11-02"
+        },
+        "status": "error"
+      },
+      {
+        "tool": "flight_search",
+        "args": {
+          "origin": {
+            "any_of": [
+              "CCU",
+              "Kolkata"
+            ]
+          },
+          "destination": {
+            "any_of": [
+              "DEL",
+              "Delhi"
+            ]
+          },
+          "date": "2026-11-02"
+        },
+        "status": "ok",
+        "max_count": 1
+      },
+      {
+        "tool": "flight_search",
+        "status": "any",
+        "min_count": 2,
+        "max_count": 3
+      }
+    ],
+    "forbidden_calls": [
+      {
+        "tool": "book_flight"
+      }
+    ],
+    "final_snapshot": {
+      "intent": {
+        "any_of": [
+          "search_flights",
+          "flight_search"
+        ]
+      },
+      "slots": {
+        "origin": {
+          "any_of": [
+            "CCU",
+            "Kolkata"
+          ]
+        },
+        "destination": {
+          "any_of": [
+            "DEL",
+            "Delhi"
+          ]
+        },
+        "date": "2026-11-02"
+      }
+    },
+    "final_mentions": [
+      {
+        "any_of": [
+          "AI-763",
+          "6E-2257",
+          "06:05",
+          "14:50"
+        ]
+      }
+    ]
+  }
+}

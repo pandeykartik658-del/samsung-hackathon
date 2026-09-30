@@ -1,0 +1,245 @@
+{
+ "id": "g02_text_near_simul",
+ "modality": "text",
+ "title": "near simul #1",
+ "family": "near_simul",
+ "description": "Barge-in 2 correction(s) within ~60 ms of the interrupt while the Ahmedabad search runs.",
+ "duration_ms": 20644,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 2500,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "AMD",
+         "Ahmedabad"
+        ]
+       },
+       "date": "2026-10-24"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "UK-2749",
+         "origin": "BLR",
+         "destination": "AMD",
+         "date": "2026-10-24",
+         "depart": "07:00",
+         "price_inr": 2838
+        },
+        {
+         "flight_id": "QP-2625",
+         "origin": "BLR",
+         "destination": "AMD",
+         "date": "2026-10-24",
+         "depart": "12:45",
+         "price_inr": 9733
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "CCU",
+         "Kolkata"
+        ]
+       },
+       "date": "2026-10-24"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "QP-8024",
+         "origin": "BLR",
+         "destination": "CCU",
+         "date": "2026-10-24",
+         "depart": "07:00",
+         "price_inr": 8431
+        },
+        {
+         "flight_id": "QP-7253",
+         "origin": "BLR",
+         "destination": "CCU",
+         "date": "2026-10-24",
+         "depart": "12:45",
+         "price_inr": 5222
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "GOI",
+         "Goa"
+        ]
+       },
+       "date": "2026-10-24"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "SG-250",
+         "origin": "BLR",
+         "destination": "GOI",
+         "date": "2026-10-24",
+         "depart": "07:00",
+         "price_inr": 4306
+        },
+        {
+         "flight_id": "6E-6316",
+         "origin": "BLR",
+         "destination": "GOI",
+         "date": "2026-10-24",
+         "depart": "12:15",
+         "price_inr": 5724
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Search flights from Bangalore to Ahmedabad on October 24th.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 609,
+   "type": "interrupt",
+   "reason": "barge_in"
+  },
+  {
+   "id": "e3",
+   "t_ms": 629,
+   "type": "text_chunk",
+   "text": "Make it Kolkata.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e4",
+   "t_ms": 644,
+   "type": "text_chunk",
+   "text": "Sorry, no, Goa.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "BLR",
+       "Bangalore"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "date": "2026-10-24"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e4",
+    "args": {
+     "destination": {
+      "any_of": [
+       "AMD",
+       "Ahmedabad"
+      ]
+     }
+    }
+   },
+   {
+    "tool": "flight_search",
+    "after_event": "e4",
+    "args": {
+     "destination": {
+      "any_of": [
+       "CCU",
+       "Kolkata"
+      ]
+     }
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "BLR",
+      "Bangalore"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "GOI",
+      "Goa"
+     ]
+    },
+    "date": "2026-10-24"
+   }
+  },
+  "must_cancel": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "AMD",
+       "Ahmedabad"
+      ]
+     }
+    },
+    "anchor_event": "e2"
+   }
+  ],
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "SG-250",
+     "6E-6316"
+    ]
+   }
+  ]
+ }
+}

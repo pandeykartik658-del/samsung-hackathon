@@ -1,0 +1,135 @@
+{
+ "id": "02_text_booking_change",
+ "modality": "text",
+ "date": "2026-10-01",
+ "tools": [
+  {
+   "name": "search_flights",
+   "description": "Search available flights",
+   "state_modifying": false,
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "origin": {
+      "type": "string"
+     },
+     "destination": {
+      "type": "string"
+     },
+     "date": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "origin",
+     "destination",
+     "date"
+    ]
+   },
+   "mock": {
+    "latency_ms": 800,
+    "response": {
+     "flights": [
+      {
+       "flight_id": "AI101",
+       "airline": "Air India",
+       "price": 5400,
+       "depart": "08:00",
+       "to": "{destination}"
+      },
+      {
+       "flight_id": "6E202",
+       "airline": "IndiGo",
+       "price": 4300,
+       "depart": "10:30",
+       "to": "{destination}"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "book_flight",
+   "description": "Book a flight for passengers",
+   "state_modifying": true,
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "flight_id": {
+      "type": "string"
+     },
+     "passengers": {
+      "type": "integer"
+     }
+    },
+    "required": [
+     "flight_id",
+     "passengers"
+    ]
+   },
+   "mock": {
+    "latency_ms": 1500,
+    "response": {
+     "booking_id": "BK-{flight_id}-{passengers}",
+     "status": "confirmed"
+    }
+   }
+  }
+ ],
+ "events": [
+  {
+   "t": 0,
+   "type": "text",
+   "text": "Book the cheapest flight from Bengaluru to Delhi on October 12 for 2 passengers",
+   "end_of_turn": true
+  },
+  {
+   "t": 1500,
+   "type": "interrupt"
+  },
+  {
+   "t": 1550,
+   "type": "text",
+   "text": "actually make it 3 passengers",
+   "end_of_turn": true
+  }
+ ],
+ "expect": {
+  "calls": [
+   {
+    "tool": "search_flights",
+    "args": {
+     "origin": "Bengaluru",
+     "destination": "Delhi",
+     "date": "2026-10-12"
+    }
+   },
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "6E202",
+     "passengers": 3
+    }
+   }
+  ],
+  "stale": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "passengers": 2
+    },
+    "after_t": 1550
+   }
+  ],
+  "final": {
+   "intent": "book_flight",
+   "slots": {
+    "passengers": 3,
+    "flight_id": "6E202"
+   }
+  },
+  "max_commits": {
+   "book_flight": 1
+  }
+ }
+}

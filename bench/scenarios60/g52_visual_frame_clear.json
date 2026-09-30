@@ -1,0 +1,123 @@
+{
+ "id": "g52_visual_frame_clear",
+ "modality": "visual",
+ "title": "frame clear #3",
+ "family": "frame_clear",
+ "description": "Clear frame of a dishwasher showing LC; ground the answer in the manual.",
+ "duration_ms": 20072,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "manual_lookup",
+   "create_ticket"
+  ],
+  "config": {
+   "manual_lookup": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "device_model": {
+        "any_of": [
+         "DW60M",
+         "dishwasher"
+        ]
+       }
+      },
+      "response": {
+       "device_model": "DW60M",
+       "section": "Error LC: leak",
+       "steps": [
+        "Check the leak.",
+        "Check the drain.",
+        "Check the tray."
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "How do I fix the error on this?",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 72,
+   "type": "video_frame",
+   "frame_id": "g52_visual_frame_clear_f2",
+   "path": "assets/g52_visual_frame_clear_f2.png",
+   "width": 160,
+   "height": 120,
+   "labels": [
+    {
+     "label": "dishwasher",
+     "model": "DW60M",
+     "confidence": 0.93,
+     "text": "LC"
+    }
+   ]
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "DW60M",
+       "dishwasher"
+      ]
+     },
+     "query": {
+      "regex": "LC"
+     }
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "create_ticket"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "troubleshoot",
+     "troubleshoot_device",
+     "manual_lookup",
+     "lookup_manual"
+    ]
+   },
+   "slots": {
+    "device_model": {
+     "any_of": [
+      "DW60M",
+      "dishwasher"
+     ]
+    }
+   }
+  },
+  "max_write_calls": {
+   "create_ticket": 0
+  },
+  "final_text": {
+   "includes_any": [
+    "leak",
+    "drain",
+    "tray"
+   ]
+  }
+ }
+}

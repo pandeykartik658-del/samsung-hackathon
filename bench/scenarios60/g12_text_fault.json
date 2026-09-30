@@ -1,0 +1,84 @@
+{
+ "id": "g12_text_fault",
+ "modality": "text",
+ "title": "fault #3",
+ "family": "fault",
+ "description": "book_flight times out (outcome unknown, not idempotent): no blind retry, report honestly.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "UK-7684",
+       "passenger_name": "Kavya Menon"
+      },
+      "response": {
+       "booking_ref": "KFATM9",
+       "flight_id": "UK-7684",
+       "status": "confirmed"
+      }
+     }
+    ],
+    "faults": [
+     {
+      "call_index": 1,
+      "kind": "timeout",
+      "timeout_ms": 4000
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Book flight UK-7684 for Kavya Menon.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "UK-7684",
+     "passenger_name": "Kavya Menon"
+    },
+    "status": "timeout",
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "UK-7684",
+    "passenger_name": "Kavya Menon"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "must_report_failure": true
+ }
+}

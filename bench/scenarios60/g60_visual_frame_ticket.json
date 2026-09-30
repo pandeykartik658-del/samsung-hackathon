@@ -1,0 +1,128 @@
+{
+ "id": "g60_visual_frame_ticket",
+ "modality": "visual",
+ "title": "frame ticket #1",
+ "family": "frame_ticket",
+ "description": "Frame-grounded ticket with the user repeating the request while it is being created.",
+ "duration_ms": 21566,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "manual_lookup",
+   "create_ticket"
+  ],
+  "config": {
+   "manual_lookup": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "device_model": {
+        "any_of": [
+         "WW90T",
+         "washing machine"
+        ]
+       }
+      },
+      "response": {
+       "device_model": "WW90T",
+       "section": "Error 4C: water supply",
+       "steps": [
+        "Check the tap.",
+        "Check the inlet hose.",
+        "Check the filter."
+       ]
+      }
+     }
+    ]
+   },
+   "create_ticket": {
+    "latency_ms": 2500
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "video_frame",
+   "frame_id": "g60_visual_frame_ticket_f1",
+   "path": "assets/g60_visual_frame_ticket_f1.png",
+   "width": 160,
+   "height": 120,
+   "labels": [
+    {
+     "label": "washing_machine",
+     "model": "WW90T",
+     "confidence": 0.9,
+     "text": "4C"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "t_ms": 200,
+   "type": "text_chunk",
+   "text": "I already tried the manual steps for 4C. Please open a support ticket for this.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e3",
+   "t_ms": 1566,
+   "type": "text_chunk",
+   "text": "Did you file it? Please open the ticket.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "create_ticket",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "WW90T",
+       "washing machine"
+      ]
+     }
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "create_ticket",
+    "after_event": "e3"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "create_ticket",
+     "support_ticket"
+    ]
+   },
+   "slots": {
+    "device_model": {
+     "any_of": [
+      "WW90T",
+      "washing machine"
+     ]
+    }
+   }
+  },
+  "max_write_calls": {
+   "create_ticket": 1
+  },
+  "final_mentions": [
+   {
+    "regex": "TCK-\\d{5}"
+   }
+  ]
+ }
+}

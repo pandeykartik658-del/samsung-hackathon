@@ -1,0 +1,190 @@
+{
+ "id": "g05_text_post_result",
+ "modality": "text",
+ "title": "post result #0",
+ "family": "post_result",
+ "description": "Date correction after the first search already returned; only the date slot changes.",
+ "duration_ms": 23852,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1200,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "DEL",
+         "Delhi"
+        ]
+       },
+       "date": "2026-10-29"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "UK-8878",
+         "origin": "JAI",
+         "destination": "DEL",
+         "date": "2026-10-29",
+         "depart": "07:45",
+         "price_inr": 4606
+        },
+        {
+         "flight_id": "6E-5002",
+         "origin": "JAI",
+         "destination": "DEL",
+         "date": "2026-10-29",
+         "depart": "12:15",
+         "price_inr": 8572
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "DEL",
+         "Delhi"
+        ]
+       },
+       "date": "2026-10-31"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-6969",
+         "origin": "JAI",
+         "destination": "DEL",
+         "date": "2026-10-31",
+         "depart": "07:45",
+         "price_inr": 5641
+        },
+        {
+         "flight_id": "QP-6044",
+         "origin": "JAI",
+         "destination": "DEL",
+         "date": "2026-10-31",
+         "depart": "12:00",
+         "price_inr": 9449
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Find flights from Jaipur to Delhi on October 29th.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 3852,
+   "type": "text_chunk",
+   "text": "Oh wait, actually I need October 31st, not October 29th.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "DEL",
+       "Delhi"
+      ]
+     },
+     "date": "2026-10-29"
+    },
+    "status": "any"
+   },
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "JAI",
+       "Jaipur"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "DEL",
+       "Delhi"
+      ]
+     },
+     "date": "2026-10-31"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e2",
+    "args": {
+     "date": "2026-10-29"
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "JAI",
+      "Jaipur"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "DEL",
+      "Delhi"
+     ]
+    },
+    "date": "2026-10-31"
+   }
+  },
+  "ordered_calls": true,
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "AI-6969",
+     "QP-6044"
+    ]
+   }
+  ],
+  "final_text": {
+   "excludes": [
+    "UK-8878",
+    "6E-5002"
+   ]
+  }
+ }
+}

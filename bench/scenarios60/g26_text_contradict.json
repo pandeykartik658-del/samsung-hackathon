@@ -1,0 +1,182 @@
+{
+ "id": "g26_text_contradict",
+ "modality": "text",
+ "title": "contradict #0",
+ "family": "contradict",
+ "description": "Contradictory corrections A -> B -> A; final state must be A, B work cancelled.",
+ "duration_ms": 21433,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 2000,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "CCU",
+         "Kolkata"
+        ]
+       },
+       "date": "2026-10-17"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-6985",
+         "origin": "GOI",
+         "destination": "CCU",
+         "date": "2026-10-17",
+         "depart": "07:15",
+         "price_inr": 6462
+        },
+        {
+         "flight_id": "UK-9781",
+         "origin": "GOI",
+         "destination": "CCU",
+         "date": "2026-10-17",
+         "depart": "12:00",
+         "price_inr": 4692
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "AMD",
+         "Ahmedabad"
+        ]
+       },
+       "date": "2026-10-17"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-1203",
+         "origin": "GOI",
+         "destination": "AMD",
+         "date": "2026-10-17",
+         "depart": "07:45",
+         "price_inr": 6093
+        },
+        {
+         "flight_id": "AI-8461",
+         "origin": "GOI",
+         "destination": "AMD",
+         "date": "2026-10-17",
+         "depart": "12:45",
+         "price_inr": 6310
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Flights from Goa to Kolkata on October 17th.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 1010,
+   "type": "text_chunk",
+   "text": "No, Ahmedabad.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e3",
+   "t_ms": 1433,
+   "type": "text_chunk",
+   "text": "No no, sorry, Kolkata was right.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "CCU",
+       "Kolkata"
+      ]
+     },
+     "date": "2026-10-17"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e3",
+    "args": {
+     "destination": {
+      "any_of": [
+       "AMD",
+       "Ahmedabad"
+      ]
+     }
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "GOI",
+      "Goa"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "CCU",
+      "Kolkata"
+     ]
+    },
+    "date": "2026-10-17"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "6E-6985",
+     "UK-9781"
+    ]
+   }
+  ]
+ }
+}

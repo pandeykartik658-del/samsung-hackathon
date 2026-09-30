@@ -1,0 +1,100 @@
+{
+ "id": "g20_text_unseen",
+ "modality": "text",
+ "title": "unseen #2",
+ "family": "unseen",
+ "description": "Unseen MCP-style manifest (annotations.readOnlyHint), enum parameter.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search"
+  ],
+  "config": {},
+  "extra": [
+   {
+    "name": "hvac_setpoint",
+    "description": "Set target temperature for a zone.",
+    "annotations": {
+     "readOnlyHint": false,
+     "idempotentHint": true
+    },
+    "parameters": {
+     "type": "object",
+     "required": [
+      "zone_label",
+      "target_c"
+     ],
+     "properties": {
+      "zone_label": {
+       "type": "string",
+       "enum": [
+        "living",
+        "bedroom",
+        "kitchen"
+       ]
+      },
+      "target_c": {
+       "type": "number"
+      }
+     }
+    },
+    "mock": {
+     "latency_ms": 300,
+     "response": {
+      "zone_label": "bedroom",
+      "target_c": 21,
+      "applied": true
+     }
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Set the bedroom room to 21 degrees.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "hvac_setpoint",
+    "args": {
+     "zone_label": "bedroom",
+     "target_c": 21
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "hvac_setpoint"
+    ]
+   },
+   "slots": {
+    "zone_label": "bedroom",
+    "target_c": 21
+   }
+  },
+  "final_text": {
+   "includes_any": [
+    "21"
+   ]
+  }
+ }
+}

@@ -1,0 +1,68 @@
+{
+ "id": "04_visual_manual",
+ "modality": "visual",
+ "tools": [
+  {
+   "name": "manual_lookup",
+   "description": "Look up the device manual grounded in a camera frame",
+   "state_modifying": false,
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "frame_id": {
+      "type": "string"
+     },
+     "query": {
+      "type": "string"
+     },
+     "device": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "frame_id",
+     "query"
+    ]
+   },
+   "mock": {
+    "latency_ms": 900,
+    "response": {
+     "answer": "A blinking red light means the door is not latched. Close the door firmly.",
+     "page": 42
+    }
+   }
+  }
+ ],
+ "events": [
+  {
+   "t": 0,
+   "type": "frame",
+   "frame_id": "f_001",
+   "caption": "washing machine control panel with blinking red light"
+  },
+  {
+   "t": 100,
+   "type": "audio",
+   "path": "clip_001.wav",
+   "transcript": "what does this blinking red light mean on my washing machine",
+   "confidence": 0.92
+  }
+ ],
+ "expect": {
+  "calls": [
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "frame_id": "f_001",
+     "device": "washing machine"
+    }
+   }
+  ],
+  "final": {
+   "intent": "manual_lookup",
+   "slots": {
+    "frame_id": "f_001"
+   }
+  }
+ }
+}

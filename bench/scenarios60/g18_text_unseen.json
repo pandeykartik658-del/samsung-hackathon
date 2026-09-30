@@ -1,0 +1,104 @@
+{
+ "id": "g18_text_unseen",
+ "modality": "text",
+ "title": "unseen #0",
+ "family": "unseen",
+ "description": "Unseen write tool with camelCase/abbreviated params (venueSlug, party_sz, when_iso).",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search"
+  ],
+  "config": {},
+  "extra": [
+   {
+    "name": "reserve_table",
+    "description": "Reserve a restaurant table. Creates a reservation.",
+    "side_effect": "write",
+    "parameters": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": [
+      "venueSlug",
+      "party_sz",
+      "when_iso"
+     ],
+     "properties": {
+      "venueSlug": {
+       "type": "string",
+       "description": "Restaurant name or slug"
+      },
+      "party_sz": {
+       "type": "integer",
+       "description": "Number of guests"
+      },
+      "when_iso": {
+       "type": "string",
+       "description": "Date and time, ISO 8601"
+      }
+     }
+    },
+    "mock": {
+     "latency_ms": 700,
+     "response": {
+      "reservation_id": "RSV-4471",
+      "status": "confirmed"
+     }
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Reserve a table at Bombay Canteen for 2 people on October 12th at 8 pm.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "reserve_table",
+    "args": {
+     "venueSlug": {
+      "regex": "Bombay"
+     },
+     "party_sz": 2,
+     "when_iso": {
+      "regex": "2026-10-12"
+     }
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "reserve_table"
+    ]
+   },
+   "slots": {
+    "party_sz": 2
+   }
+  },
+  "max_write_calls": {
+   "reserve_table": 1
+  },
+  "final_mentions": [
+   "RSV-4471"
+  ]
+ }
+}

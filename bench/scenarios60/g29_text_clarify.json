@@ -1,0 +1,141 @@
+{
+ "id": "g29_text_clarify",
+ "modality": "text",
+ "title": "clarify #0",
+ "family": "clarify",
+ "description": "Origin and date missing: ask, do not guess, then search.",
+ "duration_ms": 24414,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1500,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "JAI",
+         "Jaipur"
+        ]
+       },
+       "date": "2026-10-18"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "QP-2295",
+         "origin": "PNQ",
+         "destination": "JAI",
+         "date": "2026-10-18",
+         "depart": "07:45",
+         "price_inr": 7563
+        },
+        {
+         "flight_id": "UK-1612",
+         "origin": "PNQ",
+         "destination": "JAI",
+         "date": "2026-10-18",
+         "depart": "12:30",
+         "price_inr": 5157
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "I need a flight to Jaipur.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 4414,
+   "type": "text_chunk",
+   "text": "From Pune, on October 18th.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "PNQ",
+       "Pune"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "JAI",
+       "Jaipur"
+      ]
+     },
+     "date": "2026-10-18"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "before_event": "e2"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search",
+     "book_flight"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "PNQ",
+      "Pune"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "JAI",
+      "Jaipur"
+     ]
+    },
+    "date": "2026-10-18"
+   }
+  },
+  "clarify": {
+   "after_event": "e1",
+   "before_event": "e2"
+  },
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "QP-2295",
+     "UK-1612"
+    ]
+   }
+  ]
+ }
+}

@@ -1,0 +1,99 @@
+{
+ "id": "g22_text_unseen",
+ "modality": "text",
+ "title": "unseen #4",
+ "family": "unseen",
+ "description": "Unseen read tool (kind=query) where values must be normalised to ISO codes.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search"
+  ],
+  "config": {},
+  "extra": [
+   {
+    "name": "fx_quote",
+    "description": "Quote a currency conversion.",
+    "kind": "query",
+    "parameters": {
+     "type": "object",
+     "required": [
+      "amt",
+      "frm",
+      "to_ccy"
+     ],
+     "properties": {
+      "amt": {
+       "type": "number"
+      },
+      "frm": {
+       "type": "string",
+       "description": "ISO 4217 source"
+      },
+      "to_ccy": {
+       "type": "string",
+       "description": "ISO 4217 target"
+      }
+     }
+    },
+    "mock": {
+     "latency_ms": 300,
+     "response": {
+      "quote": 10008.0,
+      "rate": 83.4
+     }
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "How much is 120 US dollars in rupees?",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "fx_quote",
+    "args": {
+     "amt": 120,
+     "frm": "USD",
+     "to_ccy": "INR"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "fx_quote"
+    ]
+   },
+   "slots": {
+    "frm": "USD",
+    "to_ccy": "INR"
+   }
+  },
+  "final_text": {
+   "includes_any": [
+    "10008.0",
+    "10,008.00",
+    "10008"
+   ]
+  }
+ }
+}

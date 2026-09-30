@@ -1,0 +1,149 @@
+{
+ "id": "g47_audio_clarify",
+ "modality": "audio",
+ "title": "clarify #1",
+ "family": "clarify",
+ "description": "Origin and date missing: ask, do not guess, then search.",
+ "duration_ms": 23860,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1500,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "JAI",
+         "Jaipur"
+        ]
+       },
+       "date": "2026-10-08"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-2288",
+         "origin": "COK",
+         "destination": "JAI",
+         "date": "2026-10-08",
+         "depart": "07:30",
+         "price_inr": 6391
+        },
+        {
+         "flight_id": "6E-5688",
+         "origin": "COK",
+         "destination": "JAI",
+         "date": "2026-10-08",
+         "depart": "12:30",
+         "price_inr": 4820
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g47_audio_clarify_c1",
+   "path": "assets/g47_audio_clarify_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1430,
+   "end_of_turn": true,
+   "transcript": "I need a flight to Jaipur."
+  },
+  {
+   "id": "e2",
+   "t_ms": 3860,
+   "type": "audio_clip",
+   "clip_id": "g47_audio_clarify_c2",
+   "path": "assets/g47_audio_clarify_c2.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1485,
+   "end_of_turn": true,
+   "transcript": "From Kochi, on October 8th."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "COK",
+       "Kochi"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "JAI",
+       "Jaipur"
+      ]
+     },
+     "date": "2026-10-08"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "before_event": "e2"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search",
+     "book_flight"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "COK",
+      "Kochi"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "JAI",
+      "Jaipur"
+     ]
+    },
+    "date": "2026-10-08"
+   }
+  },
+  "clarify": {
+   "after_event": "e1",
+   "before_event": "e2"
+  },
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "6E-2288",
+     "6E-5688"
+    ]
+   }
+  ]
+ }
+}

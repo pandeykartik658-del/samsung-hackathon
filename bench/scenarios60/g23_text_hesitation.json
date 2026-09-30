@@ -1,0 +1,97 @@
+{
+ "id": "g23_text_hesitation",
+ "modality": "text",
+ "title": "hesitation #0",
+ "family": "hesitation",
+ "description": "Long hesitations (4121 ms and 2823 ms gaps) before end of turn; no premature write.",
+ "duration_ms": 26944,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "SG-3430",
+       "passenger_name": "Sneha Pillai"
+      },
+      "response": {
+       "booking_ref": "J9M28V",
+       "flight_id": "SG-3430",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "I'd like to book, um,",
+   "end_of_turn": false
+  },
+  {
+   "id": "e2",
+   "t_ms": 4121,
+   "type": "text_chunk",
+   "text": "uh, flight SG-3430, for, hmm,",
+   "end_of_turn": false
+  },
+  {
+   "id": "e3",
+   "t_ms": 6944,
+   "type": "text_chunk",
+   "text": "for Sneha Pillai.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "SG-3430",
+     "passenger_name": "Sneha Pillai"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "book_flight",
+    "before_event": "e3"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "SG-3430",
+    "passenger_name": "Sneha Pillai"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "J9M28V"
+  ]
+ }
+}

@@ -1,0 +1,182 @@
+{
+ "id": "g28_text_contradict",
+ "modality": "text",
+ "title": "contradict #2",
+ "family": "contradict",
+ "description": "Contradictory corrections A -> B -> A; final state must be A, B work cancelled.",
+ "duration_ms": 21900,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 2000,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "BOM",
+         "Mumbai"
+        ]
+       },
+       "date": "2026-11-03"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-2413",
+         "origin": "CCU",
+         "destination": "BOM",
+         "date": "2026-11-03",
+         "depart": "07:30",
+         "price_inr": 4768
+        },
+        {
+         "flight_id": "6E-611",
+         "origin": "CCU",
+         "destination": "BOM",
+         "date": "2026-11-03",
+         "depart": "12:45",
+         "price_inr": 2921
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "MAA",
+         "Chennai"
+        ]
+       },
+       "date": "2026-11-03"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "QP-6683",
+         "origin": "CCU",
+         "destination": "MAA",
+         "date": "2026-11-03",
+         "depart": "07:15",
+         "price_inr": 6371
+        },
+        {
+         "flight_id": "SG-5833",
+         "origin": "CCU",
+         "destination": "MAA",
+         "date": "2026-11-03",
+         "depart": "12:00",
+         "price_inr": 4353
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Flights from Kolkata to Mumbai on November 3rd.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 1069,
+   "type": "text_chunk",
+   "text": "No, Chennai.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e3",
+   "t_ms": 1900,
+   "type": "text_chunk",
+   "text": "No no, sorry, Mumbai was right.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "CCU",
+       "Kolkata"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "BOM",
+       "Mumbai"
+      ]
+     },
+     "date": "2026-11-03"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e3",
+    "args": {
+     "destination": {
+      "any_of": [
+       "MAA",
+       "Chennai"
+      ]
+     }
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "CCU",
+      "Kolkata"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "BOM",
+      "Mumbai"
+     ]
+    },
+    "date": "2026-11-03"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "AI-2413",
+     "6E-611"
+    ]
+   }
+  ]
+ }
+}

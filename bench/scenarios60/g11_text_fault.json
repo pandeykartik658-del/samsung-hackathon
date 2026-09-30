@@ -1,0 +1,84 @@
+{
+ "id": "g11_text_fault",
+ "modality": "text",
+ "title": "fault #2",
+ "family": "fault",
+ "description": "book_flight fails with an explicit 'not executed' error; one retry is safe.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "SG-4548",
+       "passenger_name": "Arjun Rao"
+      },
+      "response": {
+       "booking_ref": "XAFSQB",
+       "flight_id": "SG-4548",
+       "status": "confirmed"
+      }
+     }
+    ],
+    "faults": [
+     {
+      "call_index": 1,
+      "kind": "error",
+      "error": "service_unavailable: booking not executed, safe to retry"
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Book flight SG-4548 for Arjun Rao.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "SG-4548",
+     "passenger_name": "Arjun Rao"
+    }
+   }
+  ],
+  "forbidden_calls": [],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "SG-4548",
+    "passenger_name": "Arjun Rao"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "XAFSQB"
+  ]
+ }
+}

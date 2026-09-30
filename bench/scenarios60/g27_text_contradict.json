@@ -1,0 +1,182 @@
+{
+ "id": "g27_text_contradict",
+ "modality": "text",
+ "title": "contradict #1",
+ "family": "contradict",
+ "description": "Contradictory corrections A -> B -> A; final state must be A, B work cancelled.",
+ "duration_ms": 21468,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 2000,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "CCU",
+         "Kolkata"
+        ]
+       },
+       "date": "2026-10-04"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-1667",
+         "origin": "GOI",
+         "destination": "CCU",
+         "date": "2026-10-04",
+         "depart": "07:15",
+         "price_inr": 2953
+        },
+        {
+         "flight_id": "QP-4270",
+         "origin": "GOI",
+         "destination": "CCU",
+         "date": "2026-10-04",
+         "depart": "12:00",
+         "price_inr": 3190
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "DEL",
+         "Delhi"
+        ]
+       },
+       "date": "2026-10-04"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-7966",
+         "origin": "GOI",
+         "destination": "DEL",
+         "date": "2026-10-04",
+         "depart": "07:15",
+         "price_inr": 8369
+        },
+        {
+         "flight_id": "UK-8411",
+         "origin": "GOI",
+         "destination": "DEL",
+         "date": "2026-10-04",
+         "depart": "12:30",
+         "price_inr": 6850
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Flights from Goa to Kolkata on October 4th.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 686,
+   "type": "text_chunk",
+   "text": "No, Delhi.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e3",
+   "t_ms": 1468,
+   "type": "text_chunk",
+   "text": "No no, sorry, Kolkata was right.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "CCU",
+       "Kolkata"
+      ]
+     },
+     "date": "2026-10-04"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e3",
+    "args": {
+     "destination": {
+      "any_of": [
+       "DEL",
+       "Delhi"
+      ]
+     }
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "GOI",
+      "Goa"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "CCU",
+      "Kolkata"
+     ]
+    },
+    "date": "2026-10-04"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "AI-1667",
+     "QP-4270"
+    ]
+   }
+  ]
+ }
+}

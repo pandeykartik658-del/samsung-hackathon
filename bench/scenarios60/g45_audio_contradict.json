@@ -1,0 +1,194 @@
+{
+ "id": "g45_audio_contradict",
+ "modality": "audio",
+ "title": "contradict #1",
+ "family": "contradict",
+ "description": "Contradictory corrections A -> B -> A; final state must be A, B work cancelled.",
+ "duration_ms": 21772,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 2000,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "LKO",
+         "Lucknow"
+        ]
+       },
+       "date": "2026-10-02"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-1283",
+         "origin": "CCU",
+         "destination": "LKO",
+         "date": "2026-10-02",
+         "depart": "07:45",
+         "price_inr": 2938
+        },
+        {
+         "flight_id": "6E-6314",
+         "origin": "CCU",
+         "destination": "LKO",
+         "date": "2026-10-02",
+         "depart": "12:15",
+         "price_inr": 7682
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "AMD",
+         "Ahmedabad"
+        ]
+       },
+       "date": "2026-10-02"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-1954",
+         "origin": "CCU",
+         "destination": "AMD",
+         "date": "2026-10-02",
+         "depart": "07:30",
+         "price_inr": 4114
+        },
+        {
+         "flight_id": "6E-9131",
+         "origin": "CCU",
+         "destination": "AMD",
+         "date": "2026-10-02",
+         "depart": "12:45",
+         "price_inr": 3764
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g45_audio_contradict_c1",
+   "path": "assets/g45_audio_contradict_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 2585,
+   "end_of_turn": true,
+   "transcript": "Flights from Kolkata to Lucknow on October 2nd."
+  },
+  {
+   "id": "e2",
+   "t_ms": 825,
+   "type": "audio_clip",
+   "clip_id": "g45_audio_contradict_c2",
+   "path": "assets/g45_audio_contradict_c2.wav",
+   "sample_rate": 16000,
+   "duration_ms": 770,
+   "end_of_turn": true,
+   "transcript": "No, Ahmedabad."
+  },
+  {
+   "id": "e3",
+   "t_ms": 1772,
+   "type": "audio_clip",
+   "clip_id": "g45_audio_contradict_c3",
+   "path": "assets/g45_audio_contradict_c3.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1760,
+   "end_of_turn": true,
+   "transcript": "No no, sorry, Lucknow was right."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "CCU",
+       "Kolkata"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "LKO",
+       "Lucknow"
+      ]
+     },
+     "date": "2026-10-02"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e3",
+    "args": {
+     "destination": {
+      "any_of": [
+       "AMD",
+       "Ahmedabad"
+      ]
+     }
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "CCU",
+      "Kolkata"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "LKO",
+      "Lucknow"
+     ]
+    },
+    "date": "2026-10-02"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "AI-1283",
+     "6E-6314"
+    ]
+   }
+  ]
+ }
+}

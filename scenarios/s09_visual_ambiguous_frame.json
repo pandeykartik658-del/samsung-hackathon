@@ -1,0 +1,174 @@
+{
+  "id": "s09_visual_ambiguous_frame",
+  "modality": "visual",
+  "title": "Ambiguous camera frame",
+  "description": "The frame shows a washer and a dryer with near-equal confidence. The agent must ask which device before any manual lookup, then ground the lookup in the answer and the close-up frame (error 4C).",
+  "duration_ms": 20000,
+  "session": {
+    "reference_date": "2026-09-29",
+    "locale": "en-IN",
+    "timezone": "Asia/Kolkata"
+  },
+  "tools": {
+    "enabled": [
+      "manual_lookup",
+      "create_ticket"
+    ],
+    "config": {
+      "manual_lookup": {
+        "latency_ms": 700,
+        "fixtures": [
+          {
+            "match": {
+              "device_model": {
+                "any_of": [
+                  "WW90T",
+                  "washing machine",
+                  "washer"
+                ]
+              }
+            },
+            "response": {
+              "device_model": "WW90T",
+              "section": "Error 4C: water supply",
+              "steps": [
+                "Check that the water tap is fully open.",
+                "Make sure the inlet hose is not kinked or frozen.",
+                "Clean the inlet filter, then restart the cycle."
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t_ms": 0,
+      "type": "video_frame",
+      "frame_id": "s09_f1",
+      "path": "assets/s09_f1.png",
+      "width": 160,
+      "height": 120,
+      "labels": [
+        {
+          "label": "washing_machine",
+          "model": "WW90T",
+          "confidence": 0.49
+        },
+        {
+          "label": "dryer",
+          "model": "DV90T",
+          "confidence": 0.47
+        }
+      ]
+    },
+    {
+      "id": "e2",
+      "t_ms": 300,
+      "type": "text_chunk",
+      "text": "How do I fix the error on this?",
+      "end_of_turn": true
+    },
+    {
+      "id": "e3",
+      "t_ms": 4800,
+      "type": "video_frame",
+      "frame_id": "s09_f2",
+      "path": "assets/s09_f2.png",
+      "width": 160,
+      "height": 120,
+      "labels": [
+        {
+          "label": "display",
+          "model": "WW90T",
+          "text": "4C",
+          "confidence": 0.93
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "t_ms": 5000,
+      "type": "text_chunk",
+      "text": "The washer. It's showing 4C.",
+      "end_of_turn": true
+    }
+  ],
+  "expected": {
+    "required_calls": [
+      {
+        "tool": "manual_lookup",
+        "args": {
+          "device_model": {
+            "any_of": [
+              "WW90T",
+              "washing machine",
+              "washer"
+            ]
+          },
+          "query": {
+            "regex": "4C"
+          }
+        }
+      }
+    ],
+    "clarify": {
+      "required": true,
+      "after_event": "e2",
+      "before_event": "e4"
+    },
+    "forbidden_calls": [
+      {
+        "tool": "manual_lookup",
+        "before_event": "e4"
+      },
+      {
+        "tool": "manual_lookup",
+        "args": {
+          "device_model": {
+            "any_of": [
+              "DV90T",
+              "dryer"
+            ]
+          }
+        }
+      },
+      {
+        "tool": "create_ticket"
+      }
+    ],
+    "max_writes": {
+      "create_ticket": 0
+    },
+    "final_snapshot": {
+      "intent": {
+        "any_of": [
+          "troubleshoot",
+          "troubleshoot_device",
+          "manual_lookup"
+        ]
+      },
+      "slots": {
+        "device_model": {
+          "any_of": [
+            "WW90T",
+            "washing machine",
+            "washer"
+          ]
+        },
+        "error_code": "4C"
+      }
+    },
+    "final_mentions": [
+      {
+        "any_of": [
+          "tap",
+          "hose",
+          "filter"
+        ]
+      }
+    ]
+  }
+}

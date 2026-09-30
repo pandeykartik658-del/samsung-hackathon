@@ -1,0 +1,195 @@
+{
+ "id": "g01_text_near_simul",
+ "modality": "text",
+ "title": "near simul #0",
+ "family": "near_simul",
+ "description": "Barge-in 1 correction(s) within ~60 ms of the interrupt while the Chennai search runs.",
+ "duration_ms": 20831,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 2500,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "MAA",
+         "Chennai"
+        ]
+       },
+       "date": "2026-10-05"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-3132",
+         "origin": "BOM",
+         "destination": "MAA",
+         "date": "2026-10-05",
+         "depart": "07:45",
+         "price_inr": 3510
+        },
+        {
+         "flight_id": "UK-4865",
+         "origin": "BOM",
+         "destination": "MAA",
+         "date": "2026-10-05",
+         "depart": "12:15",
+         "price_inr": 9691
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "GOI",
+         "Goa"
+        ]
+       },
+       "date": "2026-10-05"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-2108",
+         "origin": "BOM",
+         "destination": "GOI",
+         "date": "2026-10-05",
+         "depart": "07:45",
+         "price_inr": 8527
+        },
+        {
+         "flight_id": "AI-7249",
+         "origin": "BOM",
+         "destination": "GOI",
+         "date": "2026-10-05",
+         "depart": "12:30",
+         "price_inr": 8777
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Search flights from Mumbai to Chennai on October 5th.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 811,
+   "type": "interrupt",
+   "reason": "barge_in"
+  },
+  {
+   "id": "e3",
+   "t_ms": 831,
+   "type": "text_chunk",
+   "text": "No, Goa instead.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "BOM",
+       "Mumbai"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "date": "2026-10-05"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e3",
+    "args": {
+     "destination": {
+      "any_of": [
+       "MAA",
+       "Chennai"
+      ]
+     }
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "BOM",
+      "Mumbai"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "GOI",
+      "Goa"
+     ]
+    },
+    "date": "2026-10-05"
+   }
+  },
+  "must_cancel": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "MAA",
+       "Chennai"
+      ]
+     }
+    },
+    "anchor_event": "e2"
+   }
+  ],
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "6E-2108",
+     "AI-7249"
+    ]
+   }
+  ]
+ }
+}

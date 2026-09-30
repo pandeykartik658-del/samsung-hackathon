@@ -1,0 +1,190 @@
+{
+ "id": "g06_text_post_result",
+ "modality": "text",
+ "title": "post result #1",
+ "family": "post_result",
+ "description": "Date correction after the first search already returned; only the date slot changes.",
+ "duration_ms": 23208,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1200,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "GOI",
+         "Goa"
+        ]
+       },
+       "date": "2026-11-02"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-535",
+         "origin": "PNQ",
+         "destination": "GOI",
+         "date": "2026-11-02",
+         "depart": "07:30",
+         "price_inr": 9713
+        },
+        {
+         "flight_id": "UK-6717",
+         "origin": "PNQ",
+         "destination": "GOI",
+         "date": "2026-11-02",
+         "depart": "12:15",
+         "price_inr": 3911
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "GOI",
+         "Goa"
+        ]
+       },
+       "date": "2026-11-03"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-4298",
+         "origin": "PNQ",
+         "destination": "GOI",
+         "date": "2026-11-03",
+         "depart": "07:00",
+         "price_inr": 9334
+        },
+        {
+         "flight_id": "AI-3834",
+         "origin": "PNQ",
+         "destination": "GOI",
+         "date": "2026-11-03",
+         "depart": "12:00",
+         "price_inr": 4130
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Find flights from Pune to Goa on November 2nd.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 3208,
+   "type": "text_chunk",
+   "text": "Oh wait, actually I need November 3rd, not November 2nd.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "date": "2026-11-02"
+    },
+    "status": "any"
+   },
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "PNQ",
+       "Pune"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "date": "2026-11-03"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e2",
+    "args": {
+     "date": "2026-11-02"
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "PNQ",
+      "Pune"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "GOI",
+      "Goa"
+     ]
+    },
+    "date": "2026-11-03"
+   }
+  },
+  "ordered_calls": true,
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "AI-4298",
+     "AI-3834"
+    ]
+   }
+  ],
+  "final_text": {
+   "excludes": [
+    "AI-535",
+    "UK-6717"
+   ]
+  }
+ }
+}

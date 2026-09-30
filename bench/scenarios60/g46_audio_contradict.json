@@ -1,0 +1,194 @@
+{
+ "id": "g46_audio_contradict",
+ "modality": "audio",
+ "title": "contradict #2",
+ "family": "contradict",
+ "description": "Contradictory corrections A -> B -> A; final state must be A, B work cancelled.",
+ "duration_ms": 21315,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 2000,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "BLR",
+         "Bangalore"
+        ]
+       },
+       "date": "2026-10-05"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-8893",
+         "origin": "LKO",
+         "destination": "BLR",
+         "date": "2026-10-05",
+         "depart": "07:30",
+         "price_inr": 2887
+        },
+        {
+         "flight_id": "6E-8601",
+         "origin": "LKO",
+         "destination": "BLR",
+         "date": "2026-10-05",
+         "depart": "12:15",
+         "price_inr": 6785
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "HYD",
+         "Hyderabad"
+        ]
+       },
+       "date": "2026-10-05"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "UK-6684",
+         "origin": "LKO",
+         "destination": "HYD",
+         "date": "2026-10-05",
+         "depart": "07:15",
+         "price_inr": 7559
+        },
+        {
+         "flight_id": "SG-6118",
+         "origin": "LKO",
+         "destination": "HYD",
+         "date": "2026-10-05",
+         "depart": "12:30",
+         "price_inr": 8930
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g46_audio_contradict_c1",
+   "path": "assets/g46_audio_contradict_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 2695,
+   "end_of_turn": true,
+   "transcript": "Flights from Lucknow to Bangalore on October 5th."
+  },
+  {
+   "id": "e2",
+   "t_ms": 784,
+   "type": "audio_clip",
+   "clip_id": "g46_audio_contradict_c2",
+   "path": "assets/g46_audio_contradict_c2.wav",
+   "sample_rate": 16000,
+   "duration_ms": 770,
+   "end_of_turn": true,
+   "transcript": "No, Hyderabad."
+  },
+  {
+   "id": "e3",
+   "t_ms": 1315,
+   "type": "audio_clip",
+   "clip_id": "g46_audio_contradict_c3",
+   "path": "assets/g46_audio_contradict_c3.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1870,
+   "end_of_turn": true,
+   "transcript": "No no, sorry, Bangalore was right."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "LKO",
+       "Lucknow"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "BLR",
+       "Bangalore"
+      ]
+     },
+     "date": "2026-10-05"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e3",
+    "args": {
+     "destination": {
+      "any_of": [
+       "HYD",
+       "Hyderabad"
+      ]
+     }
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "LKO",
+      "Lucknow"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "BLR",
+      "Bangalore"
+     ]
+    },
+    "date": "2026-10-05"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "6E-8893",
+     "6E-8601"
+    ]
+   }
+  ]
+ }
+}

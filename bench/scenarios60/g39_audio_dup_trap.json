@@ -1,0 +1,104 @@
+{
+ "id": "g39_audio_dup_trap",
+ "modality": "audio",
+ "title": "dup trap #2",
+ "family": "dup_trap",
+ "description": "Duplicate-booking trap (confirm_during): exactly one book_flight.",
+ "duration_ms": 20759,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 3000,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "QP-5908",
+       "passenger_name": "Rahul Verma"
+      },
+      "response": {
+       "booking_ref": "DUVRGQ",
+       "flight_id": "QP-5908",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g39_audio_dup_trap_c1",
+   "path": "assets/g39_audio_dup_trap_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1595,
+   "end_of_turn": true,
+   "transcript": "Book QP-5908 for Rahul Verma."
+  },
+  {
+   "id": "e2",
+   "t_ms": 741,
+   "type": "interrupt",
+   "reason": "barge_in"
+  },
+  {
+   "id": "e3",
+   "t_ms": 759,
+   "type": "audio_clip",
+   "clip_id": "g39_audio_dup_trap_c2",
+   "path": "assets/g39_audio_dup_trap_c2.wav",
+   "sample_rate": 16000,
+   "duration_ms": 2970,
+   "end_of_turn": true,
+   "transcript": "Hold on, that's for Rahul Verma, right? Yes, go ahead."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "QP-5908",
+     "passenger_name": "Rahul Verma"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "book_flight",
+    "after_event": "e2"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "QP-5908",
+    "passenger_name": "Rahul Verma"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "DUVRGQ"
+  ]
+ }
+}

@@ -1,0 +1,145 @@
+{
+ "id": "g55_visual_frame_ambig",
+ "modality": "visual",
+ "title": "frame ambig #2",
+ "family": "frame_ambig",
+ "description": "Ambiguous or low-confidence frame: clarify before any lookup.",
+ "duration_ms": 25158,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "manual_lookup",
+   "create_ticket"
+  ],
+  "config": {
+   "manual_lookup": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "device_model": {
+        "any_of": [
+         "DW60M",
+         "dishwasher"
+        ]
+       }
+      },
+      "response": {
+       "device_model": "DW60M",
+       "section": "Error LC: leak",
+       "steps": [
+        "Check the leak.",
+        "Check the drain.",
+        "Check the tray."
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "video_frame",
+   "frame_id": "g55_visual_frame_ambig_f1",
+   "path": "assets/g55_visual_frame_ambig_f1.png",
+   "width": 160,
+   "height": 120,
+   "labels": [
+    {
+     "label": "dishwasher",
+     "model": "DW60M",
+     "confidence": 0.31
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "t_ms": 300,
+   "type": "text_chunk",
+   "text": "Can you help me fix this?",
+   "end_of_turn": true
+  },
+  {
+   "id": "e3",
+   "t_ms": 5158,
+   "type": "text_chunk",
+   "text": "It's the dishwasher, model DW60M, showing LC.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "DW60M",
+       "dishwasher"
+      ]
+     },
+     "query": {
+      "regex": "LC"
+     }
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "manual_lookup",
+    "before_event": "e3"
+   },
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "WW90T",
+       "washing machine"
+      ]
+     }
+    }
+   },
+   {
+    "tool": "create_ticket"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "troubleshoot",
+     "troubleshoot_device",
+     "manual_lookup",
+     "lookup_manual"
+    ]
+   },
+   "slots": {
+    "device_model": {
+     "any_of": [
+      "DW60M",
+      "dishwasher"
+     ]
+    }
+   }
+  },
+  "clarify": {
+   "after_event": "e1",
+   "before_event": "e3"
+  },
+  "final_text": {
+   "includes_any": [
+    "leak",
+    "drain",
+    "tray"
+   ]
+  }
+ }
+}

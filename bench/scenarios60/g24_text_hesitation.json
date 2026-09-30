@@ -1,0 +1,97 @@
+{
+ "id": "g24_text_hesitation",
+ "modality": "text",
+ "title": "hesitation #1",
+ "family": "hesitation",
+ "description": "Long hesitations (3647 ms and 2622 ms gaps) before end of turn; no premature write.",
+ "duration_ms": 26269,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "6E-166",
+       "passenger_name": "Kavya Menon"
+      },
+      "response": {
+       "booking_ref": "2LUHDZ",
+       "flight_id": "6E-166",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "I'd like to book, um,",
+   "end_of_turn": false
+  },
+  {
+   "id": "e2",
+   "t_ms": 3647,
+   "type": "text_chunk",
+   "text": "uh, flight 6E-166, for, hmm,",
+   "end_of_turn": false
+  },
+  {
+   "id": "e3",
+   "t_ms": 6269,
+   "type": "text_chunk",
+   "text": "for Kavya Menon.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "6E-166",
+     "passenger_name": "Kavya Menon"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "book_flight",
+    "before_event": "e3"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "6E-166",
+    "passenger_name": "Kavya Menon"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "2LUHDZ"
+  ]
+ }
+}

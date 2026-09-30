@@ -1,0 +1,190 @@
+{
+ "id": "g08_text_post_result",
+ "modality": "text",
+ "title": "post result #3",
+ "family": "post_result",
+ "description": "Date correction after the first search already returned; only the date slot changes.",
+ "duration_ms": 23771,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1200,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "GOI",
+         "Goa"
+        ]
+       },
+       "date": "2026-11-02"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-1110",
+         "origin": "CCU",
+         "destination": "GOI",
+         "date": "2026-11-02",
+         "depart": "07:00",
+         "price_inr": 7672
+        },
+        {
+         "flight_id": "6E-5300",
+         "origin": "CCU",
+         "destination": "GOI",
+         "date": "2026-11-02",
+         "depart": "12:00",
+         "price_inr": 5484
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "GOI",
+         "Goa"
+        ]
+       },
+       "date": "2026-11-03"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-9426",
+         "origin": "CCU",
+         "destination": "GOI",
+         "date": "2026-11-03",
+         "depart": "07:00",
+         "price_inr": 6767
+        },
+        {
+         "flight_id": "AI-1014",
+         "origin": "CCU",
+         "destination": "GOI",
+         "date": "2026-11-03",
+         "depart": "12:15",
+         "price_inr": 7577
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Find flights from Kolkata to Goa on November 2nd.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 3771,
+   "type": "text_chunk",
+   "text": "Oh wait, actually I need November 3rd, not November 2nd.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "date": "2026-11-02"
+    },
+    "status": "any"
+   },
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "CCU",
+       "Kolkata"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "date": "2026-11-03"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e2",
+    "args": {
+     "date": "2026-11-02"
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "CCU",
+      "Kolkata"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "GOI",
+      "Goa"
+     ]
+    },
+    "date": "2026-11-03"
+   }
+  },
+  "ordered_calls": true,
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "6E-9426",
+     "AI-1014"
+    ]
+   }
+  ],
+  "final_text": {
+   "excludes": [
+    "AI-1110",
+    "6E-5300"
+   ]
+  }
+ }
+}

@@ -1,0 +1,125 @@
+{
+ "id": "g09_text_fault",
+ "modality": "text",
+ "title": "fault #0",
+ "family": "fault",
+ "description": "flight_search fails once (error); read-only, so retry and answer.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1000,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "JAI",
+         "Jaipur"
+        ]
+       },
+       "date": "2026-11-03"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-4615",
+         "origin": "MAA",
+         "destination": "JAI",
+         "date": "2026-11-03",
+         "depart": "07:15",
+         "price_inr": 8559
+        },
+        {
+         "flight_id": "SG-3411",
+         "origin": "MAA",
+         "destination": "JAI",
+         "date": "2026-11-03",
+         "depart": "12:45",
+         "price_inr": 8807
+        }
+       ]
+      }
+     }
+    ],
+    "faults": [
+     {
+      "call_index": 1,
+      "kind": "error",
+      "error": "upstream_unavailable"
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Flights from Chennai to Jaipur November 3rd please.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "MAA",
+       "Chennai"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "JAI",
+       "Jaipur"
+      ]
+     },
+     "date": "2026-11-03"
+    }
+   }
+  ],
+  "forbidden_calls": [],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "destination": {
+     "any_of": [
+      "JAI",
+      "Jaipur"
+     ]
+    },
+    "date": "2026-11-03"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "6E-4615",
+     "SG-3411"
+    ]
+   }
+  ]
+ }
+}

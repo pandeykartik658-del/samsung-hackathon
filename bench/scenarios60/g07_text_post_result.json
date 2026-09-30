@@ -1,0 +1,190 @@
+{
+ "id": "g07_text_post_result",
+ "modality": "text",
+ "title": "post result #2",
+ "family": "post_result",
+ "description": "Date correction after the first search already returned; only the date slot changes.",
+ "duration_ms": 23814,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1200,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "AMD",
+         "Ahmedabad"
+        ]
+       },
+       "date": "2026-11-05"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "QP-5917",
+         "origin": "LKO",
+         "destination": "AMD",
+         "date": "2026-11-05",
+         "depart": "07:15",
+         "price_inr": 8509
+        },
+        {
+         "flight_id": "SG-5409",
+         "origin": "LKO",
+         "destination": "AMD",
+         "date": "2026-11-05",
+         "depart": "12:00",
+         "price_inr": 7954
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "AMD",
+         "Ahmedabad"
+        ]
+       },
+       "date": "2026-11-08"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-6547",
+         "origin": "LKO",
+         "destination": "AMD",
+         "date": "2026-11-08",
+         "depart": "07:30",
+         "price_inr": 9074
+        },
+        {
+         "flight_id": "UK-9073",
+         "origin": "LKO",
+         "destination": "AMD",
+         "date": "2026-11-08",
+         "depart": "12:45",
+         "price_inr": 7756
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Find flights from Lucknow to Ahmedabad on November 5th.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 3814,
+   "type": "text_chunk",
+   "text": "Oh wait, actually I need November 8th, not November 5th.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "AMD",
+       "Ahmedabad"
+      ]
+     },
+     "date": "2026-11-05"
+    },
+    "status": "any"
+   },
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "LKO",
+       "Lucknow"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "AMD",
+       "Ahmedabad"
+      ]
+     },
+     "date": "2026-11-08"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e2",
+    "args": {
+     "date": "2026-11-05"
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "LKO",
+      "Lucknow"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "AMD",
+      "Ahmedabad"
+     ]
+    },
+    "date": "2026-11-08"
+   }
+  },
+  "ordered_calls": true,
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "6E-6547",
+     "UK-9073"
+    ]
+   }
+  ],
+  "final_text": {
+   "excludes": [
+    "QP-5917",
+    "SG-5409"
+   ]
+  }
+ }
+}

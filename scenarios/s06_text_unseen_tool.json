@@ -1,0 +1,133 @@
+{
+  "id": "s06_text_unseen_tool",
+  "modality": "text",
+  "title": "Unseen tool from the manifest",
+  "description": "The manifest adds upgrade_seat (state-modifying) and get_booking (read-only), which the agent has never seen. It must pick upgrade_seat from the schema, extract valid enum/pattern arguments, and call it exactly once.",
+  "duration_ms": 20000,
+  "session": {
+    "reference_date": "2026-09-29",
+    "locale": "en-IN",
+    "timezone": "Asia/Kolkata"
+  },
+  "tools": {
+    "enabled": [
+      "flight_search",
+      "book_flight"
+    ],
+    "extra": [
+      {
+        "name": "upgrade_seat",
+        "description": "Upgrade the cabin class of an existing booking. State-modifying; charges the fare difference.",
+        "side_effect": "write",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "booking_ref": {
+              "type": "string",
+              "pattern": "^[A-Z0-9]{6}$",
+              "description": "Six-character booking reference"
+            },
+            "cabin": {
+              "type": "string",
+              "enum": [
+                "premium_economy",
+                "business",
+                "first"
+              ]
+            }
+          },
+          "required": [
+            "booking_ref",
+            "cabin"
+          ],
+          "additionalProperties": false
+        },
+        "mock": {
+          "latency_ms": 800,
+          "response": {
+            "status": "upgraded",
+            "booking_ref": "QX7P2M",
+            "cabin": "business",
+            "fare_difference_inr": 7400
+          }
+        }
+      },
+      {
+        "name": "get_booking",
+        "description": "Fetch details of an existing booking.",
+        "side_effect": "read",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "booking_ref": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "booking_ref"
+          ]
+        },
+        "mock": {
+          "latency_ms": 300,
+          "response": {
+            "booking_ref": "QX7P2M",
+            "flight_id": "UK-811",
+            "cabin": "economy",
+            "passenger_name": "Meera Iyer"
+          }
+        }
+      }
+    ]
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t_ms": 0,
+      "type": "text_chunk",
+      "text": "Can you upgrade my booking QX7P2M to business class?",
+      "end_of_turn": true
+    }
+  ],
+  "expected": {
+    "required_calls": [
+      {
+        "tool": "upgrade_seat",
+        "args": {
+          "booking_ref": "QX7P2M",
+          "cabin": "business"
+        },
+        "max_count": 1
+      }
+    ],
+    "forbidden_calls": [
+      {
+        "tool": "book_flight"
+      },
+      {
+        "tool": "flight_search"
+      }
+    ],
+    "max_writes": {
+      "upgrade_seat": 1
+    },
+    "final_snapshot": {
+      "intent": {
+        "any_of": [
+          "upgrade_seat",
+          "seat_upgrade"
+        ]
+      },
+      "slots": {
+        "booking_ref": "QX7P2M",
+        "cabin": "business"
+      }
+    },
+    "final_mentions": [
+      {
+        "any_of": [
+          "business"
+        ]
+      }
+    ]
+  }
+}

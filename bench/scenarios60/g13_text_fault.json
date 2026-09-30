@@ -1,0 +1,110 @@
+{
+ "id": "g13_text_fault",
+ "modality": "text",
+ "title": "fault #4",
+ "family": "fault",
+ "description": "manual_lookup errors once; read-only, so retry and ground the answer in the manual.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "manual_lookup",
+   "create_ticket"
+  ],
+  "config": {
+   "manual_lookup": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "device_model": {
+        "any_of": [
+         "DW60M",
+         "dishwasher"
+        ]
+       }
+      },
+      "response": {
+       "device_model": "DW60M",
+       "section": "Error LC: leak",
+       "steps": [
+        "Check the leak.",
+        "Check the drain.",
+        "Check the tray."
+       ]
+      }
+     }
+    ],
+    "faults": [
+     {
+      "call_index": 1,
+      "kind": "error",
+      "error": "manual_service_503"
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "My dishwasher, model DW60M, shows error LC. How do I fix it?",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "DW60M",
+       "dishwasher"
+      ]
+     },
+     "query": {
+      "regex": "LC"
+     }
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "create_ticket"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "troubleshoot",
+     "troubleshoot_device",
+     "manual_lookup",
+     "lookup_manual"
+    ]
+   },
+   "slots": {
+    "device_model": {
+     "any_of": [
+      "DW60M",
+      "dishwasher"
+     ]
+    }
+   }
+  },
+  "final_text": {
+   "includes_any": [
+    "leak",
+    "drain",
+    "tray"
+   ]
+  }
+ }
+}

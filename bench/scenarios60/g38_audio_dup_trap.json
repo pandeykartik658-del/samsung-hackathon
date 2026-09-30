@@ -1,0 +1,98 @@
+{
+ "id": "g38_audio_dup_trap",
+ "modality": "audio",
+ "title": "dup trap #1",
+ "family": "dup_trap",
+ "description": "Duplicate-booking trap (again_after_success): exactly one book_flight.",
+ "duration_ms": 23299,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "SG-2281",
+       "passenger_name": "Arjun Rao"
+      },
+      "response": {
+       "booking_ref": "G57MD6",
+       "flight_id": "SG-2281",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g38_audio_dup_trap_c1",
+   "path": "assets/g38_audio_dup_trap_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1870,
+   "end_of_turn": true,
+   "transcript": "Please book SG-2281 for Arjun Rao."
+  },
+  {
+   "id": "e2",
+   "t_ms": 3299,
+   "type": "audio_clip",
+   "clip_id": "g38_audio_dup_trap_c2",
+   "path": "assets/g38_audio_dup_trap_c2.wav",
+   "sample_rate": 16000,
+   "duration_ms": 825,
+   "end_of_turn": true,
+   "transcript": "Great, book it."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "SG-2281",
+     "passenger_name": "Arjun Rao"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "book_flight",
+    "after_event": "e2"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "SG-2281",
+    "passenger_name": "Arjun Rao"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "G57MD6"
+  ]
+ }
+}

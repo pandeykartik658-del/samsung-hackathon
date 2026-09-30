@@ -1,0 +1,230 @@
+{
+  "id": "s02_text_destination_change",
+  "modality": "text",
+  "title": "Destination change while search is running",
+  "description": "A Bangalore-Delhi search is in flight when the user barges in and switches to Hyderabad. The stale search must be cancelled within the grace period and never re-run; the answer must not cite Delhi results.",
+  "duration_ms": 20000,
+  "session": {
+    "reference_date": "2026-09-29",
+    "locale": "en-IN",
+    "timezone": "Asia/Kolkata"
+  },
+  "cancel_grace_ms": 300,
+  "tools": {
+    "enabled": [
+      "flight_search",
+      "book_flight"
+    ],
+    "config": {
+      "flight_search": {
+        "latency_ms": 3000,
+        "fixtures": [
+          {
+            "match": {
+              "destination": {
+                "any_of": [
+                  "DEL",
+                  "Delhi"
+                ]
+              }
+            },
+            "response": {
+              "flights": [
+                {
+                  "flight_id": "6E-5310",
+                  "origin": "BLR",
+                  "destination": "DEL",
+                  "date": "2026-10-05",
+                  "depart": "07:00",
+                  "price_inr": 4700
+                },
+                {
+                  "flight_id": "AI-804",
+                  "origin": "BLR",
+                  "destination": "DEL",
+                  "date": "2026-10-05",
+                  "depart": "13:30",
+                  "price_inr": 5600
+                }
+              ]
+            }
+          },
+          {
+            "match": {
+              "destination": {
+                "any_of": [
+                  "HYD",
+                  "Hyderabad"
+                ]
+              }
+            },
+            "response": {
+              "flights": [
+                {
+                  "flight_id": "6E-6122",
+                  "origin": "BLR",
+                  "destination": "HYD",
+                  "date": "2026-10-05",
+                  "depart": "08:20",
+                  "price_inr": 2900
+                },
+                {
+                  "flight_id": "QP-1345",
+                  "origin": "BLR",
+                  "destination": "HYD",
+                  "date": "2026-10-05",
+                  "depart": "17:45",
+                  "price_inr": 3150
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t_ms": 0,
+      "type": "text_chunk",
+      "text": "Search flights from Bangalore",
+      "end_of_turn": false
+    },
+    {
+      "id": "e2",
+      "t_ms": 400,
+      "type": "text_chunk",
+      "text": "to Delhi on October 5th.",
+      "end_of_turn": true
+    },
+    {
+      "id": "e3",
+      "t_ms": 1900,
+      "type": "interrupt",
+      "reason": "barge_in"
+    },
+    {
+      "id": "e4",
+      "t_ms": 1900,
+      "type": "text_chunk",
+      "text": "Actually, make that Hyderabad instead.",
+      "end_of_turn": true
+    }
+  ],
+  "expected": {
+    "required_calls": [
+      {
+        "tool": "flight_search",
+        "args": {
+          "origin": {
+            "any_of": [
+              "BLR",
+              "Bangalore",
+              "Bengaluru"
+            ]
+          },
+          "destination": {
+            "any_of": [
+              "DEL",
+              "Delhi"
+            ]
+          },
+          "date": "2026-10-05"
+        },
+        "status": "any"
+      },
+      {
+        "tool": "flight_search",
+        "args": {
+          "origin": {
+            "any_of": [
+              "BLR",
+              "Bangalore",
+              "Bengaluru"
+            ]
+          },
+          "destination": {
+            "any_of": [
+              "HYD",
+              "Hyderabad"
+            ]
+          },
+          "date": "2026-10-05"
+        }
+      }
+    ],
+    "ordered_calls": true,
+    "forbidden_calls": [
+      {
+        "tool": "flight_search",
+        "args": {
+          "destination": {
+            "any_of": [
+              "DEL",
+              "Delhi"
+            ]
+          }
+        },
+        "after_event": "e4"
+      }
+    ],
+    "must_cancel": [
+      {
+        "tool": "flight_search",
+        "args": {
+          "destination": {
+            "any_of": [
+              "DEL",
+              "Delhi"
+            ]
+          }
+        },
+        "anchor_event": "e3"
+      }
+    ],
+    "max_writes": {
+      "book_flight": 0
+    },
+    "final_snapshot": {
+      "intent": {
+        "any_of": [
+          "search_flights",
+          "flight_search"
+        ]
+      },
+      "slots": {
+        "origin": {
+          "any_of": [
+            "BLR",
+            "Bangalore",
+            "Bengaluru"
+          ]
+        },
+        "destination": {
+          "any_of": [
+            "HYD",
+            "Hyderabad"
+          ]
+        },
+        "date": "2026-10-05"
+      }
+    },
+    "final_mentions": [
+      {
+        "any_of": [
+          "6E-6122",
+          "QP-1345",
+          "08:20",
+          "17:45"
+        ]
+      }
+    ],
+    "final_must_not_mention": [
+      "6E-5310",
+      "AI-804",
+      "07:00",
+      "13:30"
+    ]
+  }
+}

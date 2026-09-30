@@ -1,0 +1,92 @@
+{
+ "id": "g41_audio_unseen",
+ "modality": "audio",
+ "title": "unseen #1",
+ "family": "unseen",
+ "description": "Unseen read tool, opaque name (trk_pkg), digits spoken with spaces, pattern-validated.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search"
+  ],
+  "config": {},
+  "extra": [
+   {
+    "name": "trk_pkg",
+    "description": "Get courier tracking status for an air waybill. Read only.",
+    "read_only": true,
+    "parameters": {
+     "type": "object",
+     "required": [
+      "awb_no"
+     ],
+     "properties": {
+      "awb_no": {
+       "type": "string",
+       "pattern": "^[0-9]{10}$"
+      }
+     }
+    },
+    "mock": {
+     "latency_ms": 400,
+     "response": {
+      "awb_no": "3521342987",
+      "status_code": "OFD",
+      "eta": "today 6 pm"
+     }
+    }
+   }
+  ]
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g41_audio_unseen_c1",
+   "path": "assets/g41_audio_unseen_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 3025,
+   "end_of_turn": true,
+   "transcript": "Where is my parcel? The waybill is 3 5 2 1 3 4 2 9 8 7."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "trk_pkg",
+    "args": {
+     "awb_no": "3521342987"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "trk_pkg"
+    ]
+   },
+   "slots": {
+    "awb_no": "3521342987"
+   }
+  },
+  "final_text": {
+   "includes_any": [
+    "6 pm",
+    "today",
+    "out for delivery"
+   ]
+  }
+ }
+}

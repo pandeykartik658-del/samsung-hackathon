@@ -1,0 +1,169 @@
+{
+  "id": "s03_text_chained_search_book",
+  "modality": "text",
+  "title": "Chained calls: search then book the cheapest",
+  "description": "Search, pick the cheapest result, then book it once. The booking argument must come from the search result.",
+  "duration_ms": 20000,
+  "session": {
+    "reference_date": "2026-09-29",
+    "locale": "en-IN",
+    "timezone": "Asia/Kolkata"
+  },
+  "tools": {
+    "enabled": [
+      "flight_search",
+      "book_flight"
+    ],
+    "config": {
+      "flight_search": {
+        "latency_ms": 1200,
+        "fixtures": [
+          {
+            "match": {
+              "origin": {
+                "any_of": [
+                  "PNQ",
+                  "Pune"
+                ]
+              },
+              "destination": {
+                "any_of": [
+                  "GOI",
+                  "GOX",
+                  "Goa"
+                ]
+              }
+            },
+            "response": {
+              "flights": [
+                {
+                  "flight_id": "6E-731",
+                  "origin": "PNQ",
+                  "destination": "GOI",
+                  "date": "2026-10-20",
+                  "depart": "07:10",
+                  "price_inr": 4890
+                },
+                {
+                  "flight_id": "SG-208",
+                  "origin": "PNQ",
+                  "destination": "GOI",
+                  "date": "2026-10-20",
+                  "depart": "09:45",
+                  "price_inr": 3920
+                },
+                {
+                  "flight_id": "AI-651",
+                  "origin": "PNQ",
+                  "destination": "GOI",
+                  "date": "2026-10-20",
+                  "depart": "18:20",
+                  "price_inr": 5410
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "book_flight": {
+        "latency_ms": 900,
+        "fixtures": [
+          {
+            "match": {
+              "flight_id": "SG-208"
+            },
+            "response": {
+              "booking_ref": "PS8K2Q",
+              "flight_id": "SG-208",
+              "status": "confirmed"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t_ms": 0,
+      "type": "text_chunk",
+      "text": "Find the cheapest flight from Pune to Goa on October 20th",
+      "end_of_turn": false
+    },
+    {
+      "id": "e2",
+      "t_ms": 500,
+      "type": "text_chunk",
+      "text": "and book it for Priya Sharma.",
+      "end_of_turn": true
+    }
+  ],
+  "expected": {
+    "required_calls": [
+      {
+        "tool": "flight_search",
+        "args": {
+          "origin": {
+            "any_of": [
+              "PNQ",
+              "Pune"
+            ]
+          },
+          "destination": {
+            "any_of": [
+              "GOI",
+              "GOX",
+              "Goa"
+            ]
+          },
+          "date": "2026-10-20"
+        }
+      },
+      {
+        "tool": "book_flight",
+        "args": {
+          "flight_id": "SG-208",
+          "passenger_name": "Priya Sharma"
+        },
+        "max_count": 1
+      }
+    ],
+    "ordered_calls": true,
+    "forbidden_calls": [
+      {
+        "tool": "book_flight",
+        "args": {
+          "flight_id": {
+            "any_of": [
+              "6E-731",
+              "AI-651"
+            ]
+          }
+        }
+      }
+    ],
+    "max_writes": {
+      "book_flight": 1
+    },
+    "final_snapshot": {
+      "intent": {
+        "any_of": [
+          "book_flight",
+          "flight_booking"
+        ]
+      },
+      "slots": {
+        "flight_id": "SG-208",
+        "passenger_name": "Priya Sharma",
+        "booking_ref": "PS8K2Q"
+      }
+    },
+    "final_mentions": [
+      {
+        "any_of": [
+          "PS8K2Q"
+        ]
+      }
+    ]
+  }
+}

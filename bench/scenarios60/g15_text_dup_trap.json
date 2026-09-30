@@ -1,0 +1,90 @@
+{
+ "id": "g15_text_dup_trap",
+ "modality": "text",
+ "title": "dup trap #1",
+ "family": "dup_trap",
+ "description": "Duplicate-booking trap (again_after_success): exactly one book_flight.",
+ "duration_ms": 23221,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "AI-5828",
+       "passenger_name": "Ananya Das"
+      },
+      "response": {
+       "booking_ref": "ZVM8M5",
+       "flight_id": "AI-5828",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Please book AI-5828 for Ananya Das.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 3221,
+   "type": "text_chunk",
+   "text": "Great, book it.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "AI-5828",
+     "passenger_name": "Ananya Das"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "book_flight",
+    "after_event": "e2"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "AI-5828",
+    "passenger_name": "Ananya Das"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "ZVM8M5"
+  ]
+ }
+}

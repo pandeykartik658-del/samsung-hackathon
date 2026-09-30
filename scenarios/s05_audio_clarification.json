@@ -1,0 +1,154 @@
+{
+  "id": "s05_audio_clarification",
+  "modality": "audio",
+  "title": "Clarification for missing slots (audio)",
+  "description": "The request lacks origin and date. The agent must ask instead of guessing, and search only after the user answers.",
+  "duration_ms": 20000,
+  "session": {
+    "reference_date": "2026-09-29",
+    "locale": "en-IN",
+    "timezone": "Asia/Kolkata"
+  },
+  "tools": {
+    "enabled": [
+      "flight_search",
+      "book_flight"
+    ],
+    "config": {
+      "flight_search": {
+        "latency_ms": 1200,
+        "fixtures": [
+          {
+            "match": {
+              "origin": {
+                "any_of": [
+                  "BOM",
+                  "Mumbai"
+                ]
+              },
+              "destination": {
+                "any_of": [
+                  "DEL",
+                  "Delhi"
+                ]
+              }
+            },
+            "response": {
+              "flights": [
+                {
+                  "flight_id": "UK-955",
+                  "origin": "BOM",
+                  "destination": "DEL",
+                  "date": "2026-10-15",
+                  "depart": "08:00",
+                  "price_inr": 6200
+                },
+                {
+                  "flight_id": "6E-6031",
+                  "origin": "BOM",
+                  "destination": "DEL",
+                  "date": "2026-10-15",
+                  "depart": "12:25",
+                  "price_inr": 5100
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "events": [
+    {
+      "id": "e1",
+      "t_ms": 0,
+      "type": "audio_clip",
+      "clip_id": "s05_c1",
+      "path": "assets/s05_c1.wav",
+      "sample_rate": 16000,
+      "duration_ms": 1500,
+      "end_of_turn": true,
+      "transcript": "I need a flight to Delhi."
+    },
+    {
+      "id": "e2",
+      "t_ms": 5000,
+      "type": "audio_clip",
+      "clip_id": "s05_c2",
+      "path": "assets/s05_c2.wav",
+      "sample_rate": 16000,
+      "duration_ms": 1700,
+      "end_of_turn": true,
+      "transcript": "From Mumbai, on October 15th."
+    }
+  ],
+  "expected": {
+    "required_calls": [
+      {
+        "tool": "flight_search",
+        "args": {
+          "origin": {
+            "any_of": [
+              "BOM",
+              "Mumbai"
+            ]
+          },
+          "destination": {
+            "any_of": [
+              "DEL",
+              "Delhi"
+            ]
+          },
+          "date": "2026-10-15"
+        }
+      }
+    ],
+    "clarify": {
+      "required": true,
+      "after_event": "e1",
+      "before_event": "e2"
+    },
+    "forbidden_calls": [
+      {
+        "tool": "flight_search",
+        "before_event": "e2"
+      },
+      {
+        "tool": "book_flight"
+      }
+    ],
+    "final_snapshot": {
+      "intent": {
+        "any_of": [
+          "search_flights",
+          "flight_search"
+        ]
+      },
+      "slots": {
+        "origin": {
+          "any_of": [
+            "BOM",
+            "Mumbai"
+          ]
+        },
+        "destination": {
+          "any_of": [
+            "DEL",
+            "Delhi"
+          ]
+        },
+        "date": "2026-10-15"
+      }
+    },
+    "final_mentions": [
+      {
+        "any_of": [
+          "UK-955",
+          "6E-6031",
+          "08:00",
+          "12:25"
+        ]
+      }
+    ]
+  }
+}

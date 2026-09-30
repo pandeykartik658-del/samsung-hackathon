@@ -1,0 +1,109 @@
+{
+ "id": "g44_audio_hesitation",
+ "modality": "audio",
+ "title": "hesitation #2",
+ "family": "hesitation",
+ "description": "Long hesitations (4952 ms and 3414 ms gaps) before end of turn; no premature write.",
+ "duration_ms": 28366,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "AI-2255",
+       "passenger_name": "Priya Nair"
+      },
+      "response": {
+       "booking_ref": "34DG7S",
+       "flight_id": "AI-2255",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g44_audio_hesitation_c1",
+   "path": "assets/g44_audio_hesitation_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1155,
+   "end_of_turn": false,
+   "transcript": "I'd like to book, um,"
+  },
+  {
+   "id": "e2",
+   "t_ms": 4952,
+   "type": "audio_clip",
+   "clip_id": "g44_audio_hesitation_c2",
+   "path": "assets/g44_audio_hesitation_c2.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1595,
+   "end_of_turn": false,
+   "transcript": "uh, flight AI-2255, for, hmm,"
+  },
+  {
+   "id": "e3",
+   "t_ms": 8366,
+   "type": "audio_clip",
+   "clip_id": "g44_audio_hesitation_c3",
+   "path": "assets/g44_audio_hesitation_c3.wav",
+   "sample_rate": 16000,
+   "duration_ms": 825,
+   "end_of_turn": true,
+   "transcript": "for Priya Nair."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "AI-2255",
+     "passenger_name": "Priya Nair"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "book_flight",
+    "before_event": "e3"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "AI-2255",
+    "passenger_name": "Priya Nair"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "34DG7S"
+  ]
+ }
+}

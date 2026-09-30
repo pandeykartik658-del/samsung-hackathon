@@ -1,0 +1,198 @@
+{
+ "id": "g34_audio_post_result",
+ "modality": "audio",
+ "title": "post result #1",
+ "family": "post_result",
+ "description": "Date correction after the first search already returned; only the date slot changes.",
+ "duration_ms": 23113,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1200,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "COK",
+         "Kochi"
+        ]
+       },
+       "date": "2026-10-28"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "SG-7085",
+         "origin": "DEL",
+         "destination": "COK",
+         "date": "2026-10-28",
+         "depart": "07:15",
+         "price_inr": 8503
+        },
+        {
+         "flight_id": "QP-3258",
+         "origin": "DEL",
+         "destination": "COK",
+         "date": "2026-10-28",
+         "depart": "12:00",
+         "price_inr": 4214
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "COK",
+         "Kochi"
+        ]
+       },
+       "date": "2026-10-29"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "UK-9425",
+         "origin": "DEL",
+         "destination": "COK",
+         "date": "2026-10-29",
+         "depart": "07:00",
+         "price_inr": 7713
+        },
+        {
+         "flight_id": "6E-1992",
+         "origin": "DEL",
+         "destination": "COK",
+         "date": "2026-10-29",
+         "depart": "12:45",
+         "price_inr": 9722
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g34_audio_post_result_c1",
+   "path": "assets/g34_audio_post_result_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 2695,
+   "end_of_turn": true,
+   "transcript": "Find flights from Delhi to Kochi on October 28th."
+  },
+  {
+   "id": "e2",
+   "t_ms": 3113,
+   "type": "audio_clip",
+   "clip_id": "g34_audio_post_result_c2",
+   "path": "assets/g34_audio_post_result_c2.wav",
+   "sample_rate": 16000,
+   "duration_ms": 3080,
+   "end_of_turn": true,
+   "transcript": "Oh wait, actually I need October 29th, not October 28th."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "COK",
+       "Kochi"
+      ]
+     },
+     "date": "2026-10-28"
+    },
+    "status": "any"
+   },
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "DEL",
+       "Delhi"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "COK",
+       "Kochi"
+      ]
+     },
+     "date": "2026-10-29"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e2",
+    "args": {
+     "date": "2026-10-28"
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "DEL",
+      "Delhi"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "COK",
+      "Kochi"
+     ]
+    },
+    "date": "2026-10-29"
+   }
+  },
+  "ordered_calls": true,
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "UK-9425",
+     "6E-1992"
+    ]
+   }
+  ],
+  "final_text": {
+   "excludes": [
+    "SG-7085",
+    "QP-3258"
+   ]
+  }
+ }
+}

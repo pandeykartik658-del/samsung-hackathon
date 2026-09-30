@@ -1,0 +1,99 @@
+{
+ "id": "01_text_reroute",
+ "modality": "text",
+ "date": "2026-10-01",
+ "tools": [
+  {
+   "name": "search_flights",
+   "description": "Search available flights",
+   "state_modifying": false,
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "origin": {
+      "type": "string"
+     },
+     "destination": {
+      "type": "string"
+     },
+     "date": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "origin",
+     "destination",
+     "date"
+    ]
+   },
+   "mock": {
+    "latency_ms": 1200,
+    "response": {
+     "flights": [
+      {
+       "flight_id": "AI101",
+       "airline": "Air India",
+       "price": 5400,
+       "depart": "08:00",
+       "to": "{destination}"
+      },
+      {
+       "flight_id": "6E202",
+       "airline": "IndiGo",
+       "price": 4300,
+       "depart": "10:30",
+       "to": "{destination}"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "events": [
+  {
+   "t": 0,
+   "type": "text",
+   "text": "Find flights from Delhi to Mumbai tomorrow",
+   "end_of_turn": true
+  },
+  {
+   "t": 400,
+   "type": "interrupt"
+  },
+  {
+   "t": 450,
+   "type": "text",
+   "text": "no wait, to Pune instead",
+   "end_of_turn": true
+  }
+ ],
+ "expect": {
+  "calls": [
+   {
+    "tool": "search_flights",
+    "args": {
+     "origin": "Delhi",
+     "destination": "Pune",
+     "date": "2026-10-02"
+    }
+   }
+  ],
+  "stale": [
+   {
+    "tool": "search_flights",
+    "args": {
+     "destination": "Mumbai"
+    },
+    "after_t": 450
+   }
+  ],
+  "final": {
+   "intent": "search_flights",
+   "slots": {
+    "origin": "Delhi",
+    "destination": "Pune",
+    "date": "2026-10-02"
+   }
+  }
+ }
+}

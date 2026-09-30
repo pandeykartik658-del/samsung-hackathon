@@ -1,0 +1,198 @@
+{
+ "id": "g35_audio_post_result",
+ "modality": "audio",
+ "title": "post result #2",
+ "family": "post_result",
+ "description": "Date correction after the first search already returned; only the date slot changes.",
+ "duration_ms": 22761,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 1200,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "GOI",
+         "Goa"
+        ]
+       },
+       "date": "2026-11-01"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "AI-4078",
+         "origin": "BOM",
+         "destination": "GOI",
+         "date": "2026-11-01",
+         "depart": "07:00",
+         "price_inr": 5518
+        },
+        {
+         "flight_id": "UK-1204",
+         "origin": "BOM",
+         "destination": "GOI",
+         "date": "2026-11-01",
+         "depart": "12:45",
+         "price_inr": 3391
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "GOI",
+         "Goa"
+        ]
+       },
+       "date": "2026-11-05"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "UK-6733",
+         "origin": "BOM",
+         "destination": "GOI",
+         "date": "2026-11-05",
+         "depart": "07:30",
+         "price_inr": 5645
+        },
+        {
+         "flight_id": "UK-5965",
+         "origin": "BOM",
+         "destination": "GOI",
+         "date": "2026-11-05",
+         "depart": "12:15",
+         "price_inr": 5591
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g35_audio_post_result_c1",
+   "path": "assets/g35_audio_post_result_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 2640,
+   "end_of_turn": true,
+   "transcript": "Find flights from Mumbai to Goa on November 1st."
+  },
+  {
+   "id": "e2",
+   "t_ms": 2761,
+   "type": "audio_clip",
+   "clip_id": "g35_audio_post_result_c2",
+   "path": "assets/g35_audio_post_result_c2.wav",
+   "sample_rate": 16000,
+   "duration_ms": 3080,
+   "end_of_turn": true,
+   "transcript": "Oh wait, actually I need November 5th, not November 1st."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "date": "2026-11-01"
+    },
+    "status": "any"
+   },
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "BOM",
+       "Mumbai"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "GOI",
+       "Goa"
+      ]
+     },
+     "date": "2026-11-05"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e2",
+    "args": {
+     "date": "2026-11-01"
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "BOM",
+      "Mumbai"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "GOI",
+      "Goa"
+     ]
+    },
+    "date": "2026-11-05"
+   }
+  },
+  "ordered_calls": true,
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "UK-6733",
+     "UK-5965"
+    ]
+   }
+  ],
+  "final_text": {
+   "excludes": [
+    "AI-4078",
+    "UK-1204"
+   ]
+  }
+ }
+}

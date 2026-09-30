@@ -1,0 +1,245 @@
+{
+ "id": "g04_text_near_simul",
+ "modality": "text",
+ "title": "near simul #3",
+ "family": "near_simul",
+ "description": "Barge-in 2 correction(s) within ~60 ms of the interrupt while the Ahmedabad search runs.",
+ "duration_ms": 21116,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 2500,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "AMD",
+         "Ahmedabad"
+        ]
+       },
+       "date": "2026-09-30"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "SG-9897",
+         "origin": "BLR",
+         "destination": "AMD",
+         "date": "2026-09-30",
+         "depart": "07:30",
+         "price_inr": 6946
+        },
+        {
+         "flight_id": "QP-6557",
+         "origin": "BLR",
+         "destination": "AMD",
+         "date": "2026-09-30",
+         "depart": "12:00",
+         "price_inr": 8158
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "PNQ",
+         "Pune"
+        ]
+       },
+       "date": "2026-09-30"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "QP-2654",
+         "origin": "BLR",
+         "destination": "PNQ",
+         "date": "2026-09-30",
+         "depart": "07:00",
+         "price_inr": 5080
+        },
+        {
+         "flight_id": "SG-3347",
+         "origin": "BLR",
+         "destination": "PNQ",
+         "date": "2026-09-30",
+         "depart": "12:15",
+         "price_inr": 7991
+        }
+       ]
+      }
+     },
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "COK",
+         "Kochi"
+        ]
+       },
+       "date": "2026-09-30"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "SG-8335",
+         "origin": "BLR",
+         "destination": "COK",
+         "date": "2026-09-30",
+         "depart": "07:45",
+         "price_inr": 8376
+        },
+        {
+         "flight_id": "6E-7289",
+         "origin": "BLR",
+         "destination": "COK",
+         "date": "2026-09-30",
+         "depart": "12:30",
+         "price_inr": 8663
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Search flights from Bangalore to Ahmedabad on tomorrow.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 1083,
+   "type": "interrupt",
+   "reason": "barge_in"
+  },
+  {
+   "id": "e3",
+   "t_ms": 1097,
+   "type": "text_chunk",
+   "text": "Make it Pune.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e4",
+   "t_ms": 1116,
+   "type": "text_chunk",
+   "text": "Sorry, no, Kochi.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "origin": {
+      "any_of": [
+       "BLR",
+       "Bangalore"
+      ]
+     },
+     "destination": {
+      "any_of": [
+       "COK",
+       "Kochi"
+      ]
+     },
+     "date": "2026-09-30"
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e4",
+    "args": {
+     "destination": {
+      "any_of": [
+       "AMD",
+       "Ahmedabad"
+      ]
+     }
+    }
+   },
+   {
+    "tool": "flight_search",
+    "after_event": "e4",
+    "args": {
+     "destination": {
+      "any_of": [
+       "PNQ",
+       "Pune"
+      ]
+     }
+    }
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "search_flights",
+     "flight_search"
+    ]
+   },
+   "slots": {
+    "origin": {
+     "any_of": [
+      "BLR",
+      "Bangalore"
+     ]
+    },
+    "destination": {
+     "any_of": [
+      "COK",
+      "Kochi"
+     ]
+    },
+    "date": "2026-09-30"
+   }
+  },
+  "must_cancel": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "AMD",
+       "Ahmedabad"
+      ]
+     }
+    },
+    "anchor_event": "e2"
+   }
+  ],
+  "max_write_calls": {
+   "book_flight": 0
+  },
+  "final_mentions": [
+   {
+    "any_of": [
+     "SG-8335",
+     "6E-7289"
+    ]
+   }
+  ]
+ }
+}

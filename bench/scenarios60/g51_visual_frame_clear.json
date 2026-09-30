@@ -1,0 +1,123 @@
+{
+ "id": "g51_visual_frame_clear",
+ "modality": "visual",
+ "title": "frame clear #2",
+ "family": "frame_clear",
+ "description": "Clear frame of a TV showing NO SIGNAL; ground the answer in the manual.",
+ "duration_ms": 20394,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "manual_lookup",
+   "create_ticket"
+  ],
+  "config": {
+   "manual_lookup": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "device_model": {
+        "any_of": [
+         "QN55Q80",
+         "TV"
+        ]
+       }
+      },
+      "response": {
+       "device_model": "QN55Q80",
+       "section": "No signal",
+       "steps": [
+        "Check the input.",
+        "Check the HDMI.",
+        "Check the cable."
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "video_frame",
+   "frame_id": "g51_visual_frame_clear_f1",
+   "path": "assets/g51_visual_frame_clear_f1.png",
+   "width": 160,
+   "height": 120,
+   "labels": [
+    {
+     "label": "TV",
+     "model": "QN55Q80",
+     "confidence": 0.93,
+     "text": "NO SIGNAL"
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "t_ms": 394,
+   "type": "text_chunk",
+   "text": "What does this error mean and how do I fix it?",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "QN55Q80",
+       "TV"
+      ]
+     },
+     "query": {
+      "regex": "NO\\s*SIGNAL"
+     }
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "create_ticket"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "troubleshoot",
+     "troubleshoot_device",
+     "manual_lookup",
+     "lookup_manual"
+    ]
+   },
+   "slots": {
+    "device_model": {
+     "any_of": [
+      "QN55Q80",
+      "TV"
+     ]
+    }
+   }
+  },
+  "max_write_calls": {
+   "create_ticket": 0
+  },
+  "final_text": {
+   "includes_any": [
+    "input",
+    "HDMI",
+    "cable"
+   ]
+  }
+ }
+}

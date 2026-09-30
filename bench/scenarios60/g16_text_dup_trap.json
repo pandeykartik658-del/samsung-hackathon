@@ -1,0 +1,96 @@
+{
+ "id": "g16_text_dup_trap",
+ "modality": "text",
+ "title": "dup trap #2",
+ "family": "dup_trap",
+ "description": "Duplicate-booking trap (confirm_during): exactly one book_flight.",
+ "duration_ms": 21187,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 3000,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "SG-8014",
+       "passenger_name": "Rahul Verma"
+      },
+      "response": {
+       "booking_ref": "KFCKU2",
+       "flight_id": "SG-8014",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Book SG-8014 for Rahul Verma.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 1185,
+   "type": "interrupt",
+   "reason": "barge_in"
+  },
+  {
+   "id": "e3",
+   "t_ms": 1187,
+   "type": "text_chunk",
+   "text": "Hold on, that's for Rahul Verma, right? Yes, go ahead.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "SG-8014",
+     "passenger_name": "Rahul Verma"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "book_flight",
+    "after_event": "e2"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "SG-8014",
+    "passenger_name": "Rahul Verma"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "KFCKU2"
+  ]
+ }
+}

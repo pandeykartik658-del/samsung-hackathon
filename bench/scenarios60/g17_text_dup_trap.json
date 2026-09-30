@@ -1,0 +1,97 @@
+{
+ "id": "g17_text_dup_trap",
+ "modality": "text",
+ "title": "dup trap #3",
+ "family": "dup_trap",
+ "description": "Two different passengers on one flight: two writes are correct, a third is not.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "UK-3439",
+       "passenger_name": "Aditya Kulkarni"
+      },
+      "response": {
+       "booking_ref": "7H6YUW",
+       "flight_id": "UK-3439",
+       "status": "confirmed"
+      }
+     },
+     {
+      "match": {
+       "flight_id": "UK-3439",
+       "passenger_name": "Arjun Rao"
+      },
+      "response": {
+       "booking_ref": "6TYQYN",
+       "flight_id": "UK-3439",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Book UK-3439 for Aditya Kulkarni, and also UK-3439 for Arjun Rao.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "UK-3439",
+     "passenger_name": "Aditya Kulkarni"
+    },
+    "max_count": 1
+   },
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "UK-3439",
+     "passenger_name": "Arjun Rao"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "UK-3439"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 2
+  },
+  "final_mentions": [
+   "7H6YUW",
+   "6TYQYN"
+  ]
+ }
+}

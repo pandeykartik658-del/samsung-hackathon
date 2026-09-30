@@ -1,0 +1,97 @@
+{
+ "id": "g25_text_hesitation",
+ "modality": "text",
+ "title": "hesitation #2",
+ "family": "hesitation",
+ "description": "Long hesitations (4842 ms and 2270 ms gaps) before end of turn; no premature write.",
+ "duration_ms": 27112,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "QP-1280",
+       "passenger_name": "Priya Nair"
+      },
+      "response": {
+       "booking_ref": "JXR6R3",
+       "flight_id": "QP-1280",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "I'd like to book, um,",
+   "end_of_turn": false
+  },
+  {
+   "id": "e2",
+   "t_ms": 4842,
+   "type": "text_chunk",
+   "text": "uh, flight QP-1280, for, hmm,",
+   "end_of_turn": false
+  },
+  {
+   "id": "e3",
+   "t_ms": 7112,
+   "type": "text_chunk",
+   "text": "for Priya Nair.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "QP-1280",
+     "passenger_name": "Priya Nair"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "book_flight",
+    "before_event": "e3"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "QP-1280",
+    "passenger_name": "Priya Nair"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "JXR6R3"
+  ]
+ }
+}

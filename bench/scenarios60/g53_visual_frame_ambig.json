@@ -1,0 +1,145 @@
+{
+ "id": "g53_visual_frame_ambig",
+ "modality": "visual",
+ "title": "frame ambig #0",
+ "family": "frame_ambig",
+ "description": "Ambiguous or low-confidence frame: clarify before any lookup.",
+ "duration_ms": 25292,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "manual_lookup",
+   "create_ticket"
+  ],
+  "config": {
+   "manual_lookup": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "device_model": {
+        "any_of": [
+         "MS23K",
+         "microwave"
+        ]
+       }
+      },
+      "response": {
+       "device_model": "MS23K",
+       "section": "Error C-d0: button",
+       "steps": [
+        "Check the button.",
+        "Check the door.",
+        "Check the power."
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "video_frame",
+   "frame_id": "g53_visual_frame_ambig_f1",
+   "path": "assets/g53_visual_frame_ambig_f1.png",
+   "width": 160,
+   "height": 120,
+   "labels": [
+    {
+     "label": "microwave",
+     "model": "MS23K",
+     "confidence": 0.31
+    }
+   ]
+  },
+  {
+   "id": "e2",
+   "t_ms": 300,
+   "type": "text_chunk",
+   "text": "Can you help me fix this?",
+   "end_of_turn": true
+  },
+  {
+   "id": "e3",
+   "t_ms": 5292,
+   "type": "text_chunk",
+   "text": "It's the microwave, model MS23K, showing C-d0.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "MS23K",
+       "microwave"
+      ]
+     },
+     "query": {
+      "regex": "C\\-d0"
+     }
+    }
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "manual_lookup",
+    "before_event": "e3"
+   },
+   {
+    "tool": "manual_lookup",
+    "args": {
+     "device_model": {
+      "any_of": [
+       "AR18B",
+       "air conditioner"
+      ]
+     }
+    }
+   },
+   {
+    "tool": "create_ticket"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "troubleshoot",
+     "troubleshoot_device",
+     "manual_lookup",
+     "lookup_manual"
+    ]
+   },
+   "slots": {
+    "device_model": {
+     "any_of": [
+      "MS23K",
+      "microwave"
+     ]
+    }
+   }
+  },
+  "clarify": {
+   "after_event": "e1",
+   "before_event": "e3"
+  },
+  "final_text": {
+   "includes_any": [
+    "button",
+    "door",
+    "power"
+   ]
+  }
+ }
+}

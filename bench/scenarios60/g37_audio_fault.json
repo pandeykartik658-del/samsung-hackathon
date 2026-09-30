@@ -1,0 +1,88 @@
+{
+ "id": "g37_audio_fault",
+ "modality": "audio",
+ "title": "fault #2",
+ "family": "fault",
+ "description": "book_flight fails with an explicit 'not executed' error; one retry is safe.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "SG-2124",
+       "passenger_name": "Rohan Gupta"
+      },
+      "response": {
+       "booking_ref": "4MDS79",
+       "flight_id": "SG-2124",
+       "status": "confirmed"
+      }
+     }
+    ],
+    "faults": [
+     {
+      "call_index": 1,
+      "kind": "error",
+      "error": "service_unavailable: booking not executed, safe to retry"
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g37_audio_fault_c1",
+   "path": "assets/g37_audio_fault_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 1980,
+   "end_of_turn": true,
+   "transcript": "Book flight SG-2124 for Rohan Gupta."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "SG-2124",
+     "passenger_name": "Rohan Gupta"
+    }
+   }
+  ],
+  "forbidden_calls": [],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "SG-2124",
+    "passenger_name": "Rohan Gupta"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 1
+  },
+  "final_mentions": [
+   "4MDS79"
+  ]
+ }
+}

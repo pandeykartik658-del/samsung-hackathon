@@ -1,0 +1,119 @@
+{
+ "id": "g30_text_cancel_all",
+ "modality": "text",
+ "title": "cancel all #0",
+ "family": "cancel_all",
+ "description": "User abandons the task mid-search: cancel, confirm, no further calls.",
+ "duration_ms": 21305,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "flight_search": {
+    "latency_ms": 3000,
+    "fixtures": [
+     {
+      "match": {
+       "destination": {
+        "any_of": [
+         "BOM",
+         "Mumbai"
+        ]
+       },
+       "date": "2026-10-23"
+      },
+      "response": {
+       "flights": [
+        {
+         "flight_id": "6E-7303",
+         "origin": "HYD",
+         "destination": "BOM",
+         "date": "2026-10-23",
+         "depart": "07:00",
+         "price_inr": 9432
+        },
+        {
+         "flight_id": "QP-226",
+         "origin": "HYD",
+         "destination": "BOM",
+         "date": "2026-10-23",
+         "depart": "12:45",
+         "price_inr": 8245
+        }
+       ]
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "text_chunk",
+   "text": "Search flights from Hyderabad to Mumbai on October 23rd.",
+   "end_of_turn": true
+  },
+  {
+   "id": "e2",
+   "t_ms": 1305,
+   "type": "text_chunk",
+   "text": "Actually never mind, cancel everything.",
+   "end_of_turn": true
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "flight_search",
+    "args": {
+     "destination": {
+      "any_of": [
+       "BOM",
+       "Mumbai"
+      ]
+     }
+    },
+    "status": "any"
+   }
+  ],
+  "forbidden_calls": [
+   {
+    "tool": "flight_search",
+    "after_event": "e2"
+   },
+   {
+    "tool": "book_flight"
+   }
+  ],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     null,
+     "none",
+     "cancelled",
+     "cancel"
+    ]
+   },
+   "slots": {}
+  },
+  "must_cancel": [
+   {
+    "tool": "flight_search",
+    "anchor_event": "e2"
+   }
+  ],
+  "max_write_calls": {
+   "book_flight": 0
+  }
+ }
+}

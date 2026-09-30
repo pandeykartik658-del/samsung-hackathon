@@ -1,0 +1,101 @@
+{
+ "id": "g40_audio_dup_trap",
+ "modality": "audio",
+ "title": "dup trap #3",
+ "family": "dup_trap",
+ "description": "Two different passengers on one flight: two writes are correct, a third is not.",
+ "duration_ms": 20000,
+ "session": {
+  "reference_date": "2026-09-29",
+  "locale": "en-IN",
+  "timezone": "Asia/Kolkata"
+ },
+ "cancel_grace_ms": 300,
+ "tools": {
+  "enabled": [
+   "flight_search",
+   "book_flight"
+  ],
+  "config": {
+   "book_flight": {
+    "latency_ms": 900,
+    "fixtures": [
+     {
+      "match": {
+       "flight_id": "AI-5050",
+       "passenger_name": "Arjun Rao"
+      },
+      "response": {
+       "booking_ref": "H6ZLDB",
+       "flight_id": "AI-5050",
+       "status": "confirmed"
+      }
+     },
+     {
+      "match": {
+       "flight_id": "AI-5050",
+       "passenger_name": "Vikram Shah"
+      },
+      "response": {
+       "booking_ref": "X9Z7KR",
+       "flight_id": "AI-5050",
+       "status": "confirmed"
+      }
+     }
+    ]
+   }
+  }
+ },
+ "events": [
+  {
+   "id": "e1",
+   "t_ms": 0,
+   "type": "audio_clip",
+   "clip_id": "g40_audio_dup_trap_c1",
+   "path": "assets/g40_audio_dup_trap_c1.wav",
+   "sample_rate": 16000,
+   "duration_ms": 3355,
+   "end_of_turn": true,
+   "transcript": "Book AI-5050 for Arjun Rao, and also AI-5050 for Vikram Shah."
+  }
+ ],
+ "expected": {
+  "required_calls": [
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "AI-5050",
+     "passenger_name": "Arjun Rao"
+    },
+    "max_count": 1
+   },
+   {
+    "tool": "book_flight",
+    "args": {
+     "flight_id": "AI-5050",
+     "passenger_name": "Vikram Shah"
+    },
+    "max_count": 1
+   }
+  ],
+  "forbidden_calls": [],
+  "final_snapshot": {
+   "intent": {
+    "any_of": [
+     "book_flight",
+     "flight_booking"
+    ]
+   },
+   "slots": {
+    "flight_id": "AI-5050"
+   }
+  },
+  "max_write_calls": {
+   "book_flight": 2
+  },
+  "final_mentions": [
+   "H6ZLDB",
+   "X9Z7KR"
+  ]
+ }
+}
