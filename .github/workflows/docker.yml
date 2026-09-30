@@ -43,7 +43,9 @@ jobs:
             set -e
             echo "== bench60, kit transcripts/labels";  python -m bench.run_suite bench/scenarios60 --agent theme5.agent:Agent --out /tmp/b1 | sed -n "/^MEAN/,/^SUITE/p"
             echo "== bench60, raw media only";          python -m bench.run_suite /data/real60 --agent theme5.agent:Agent --strip-oracle --out /tmp/b2 | sed -n "/^scenario/,/^SUITE/p"
-            echo "== public-style 9, raw media only";   python -m sim.run /data/real9 --strip-oracle --out /tmp/b3 | tail -12'
+            echo "== public-style 9, raw media only";   python -m sim.run /data/real9 --strip-oracle --out /tmp/b3 | tail -12
+            echo "== what Whisper hears";               python -m bench.asr_probe /data/real60 --limit 40
+            echo "== worst raw-media scenarios";        sed -n "/## 5 worst/,\$p" /tmp/b2/REPORT.md | head -150'
 
       - name: Image size
         if: always()
