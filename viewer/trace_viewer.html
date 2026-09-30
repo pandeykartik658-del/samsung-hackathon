@@ -187,6 +187,13 @@ code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospac
 </script>
 
 <script>
+// A frame label is a string or an object like {label, model, confidence}.
+function frameLabel(l) {
+  if (l == null || typeof l !== "object") return String(l);
+  const name = String(l.label ?? l.name ?? l.text ?? "?").replace(/_/g, " ");
+  const bits = [l.model, typeof l.confidence === "number" ? l.confidence.toFixed(2) : null].filter(v => v != null && v !== "");
+  return bits.length ? `${name} ${bits.join(" ")}` : name;
+}
 "use strict";
 // ------------------------------------------------------------------------------------------
 // Normalisation. ASSUMPTION: field and type names; accepted spellings mirror sim/wire.py
@@ -408,7 +415,7 @@ function textOf(r) {
   switch (r.kind) {
     case "text": return short(b.text ?? b.content ?? "");
     case "audio": return b.transcript ? `♪ "${b.transcript}"` : `♪ audio ${b.clip_id ?? b.path ?? ""}`;
-    case "frame": return `▣ frame ${b.frame_id ?? b.path ?? ""}${Array.isArray(b.labels) ? " (" + b.labels.join(", ") + ")" : ""}`;
+    case "frame": return `▣ frame ${b.frame_id ?? b.path ?? ""}${Array.isArray(b.labels) && b.labels.length ? " (" + b.labels.map(frameLabel).join(", ") + ")" : ""}`;
     case "interrupt": return `interrupt${b.reason ? " (" + b.reason + ")" : ""}`;
     case "manifest": { const n = (b.tools && (Array.isArray(b.tools) ? b.tools.length : Object.keys(b.tools).length)) || 0; return `manifest (${n} tools)`; }
     case "end": return "session end";

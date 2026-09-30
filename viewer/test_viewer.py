@@ -33,6 +33,13 @@ def test_embedded_sample_matches_file():
     assert _lines(embed_sample.embedded(HTML.read_text())) == _lines(SAMPLE.read_text())
 
 
+def test_frame_labels_render_objects_not_object_object():
+    """Frame labels may be {label, model, confidence} objects (scenario s09); the summary must format them."""
+    html = HTML.read_text()
+    assert "function frameLabel(" in html
+    assert "b.labels.map(frameLabel)" in html
+    assert "b.labels.join(" not in html
+
 def test_sample_records_have_time_and_direction():
     for ln in _lines(SAMPLE.read_text()):
         rec = json.loads(ln)

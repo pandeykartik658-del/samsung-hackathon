@@ -30,6 +30,7 @@ from .trace import Trace
 from .vloop import VirtualTimeLoop
 
 WALL_CAP_S = 120.0
+SETUP_CAP_S = 300.0  # guide 6: warm-up budget, not charged to the scenario
 
 
 @dataclass
@@ -124,7 +125,7 @@ class Harness:
     async def _consume(self, outbox: asyncio.Queue) -> None:
         while True:
             obj = await outbox.get()
-            t = self.now_ms()
+            t = round(self.now_ms(), 3)  # same rounding as _send: a non-zero t0 must not break ordering
             try:
                 action = wire.normalize_action(self.codec.action_in(obj))
             except Exception as exc:  # codec failure is a protocol error
@@ -208,13 +209,22 @@ class Harness:
 
     async def _main(self) -> str:
         loop = asyncio.get_running_loop()
+        f = self.agent_factory
+        agent = f(clock=self.now_ms) if accepts_kw(f, "clock") else f()
+        setup = getattr(agent, "setup", None)
+        if setup is not None:  # ASSUMPTION (guide 6): the kit runs the warm-up hook before the scenario clock
+            try:
+                await asyncio.wait_for(setup(), timeout=SETUP_CAP_S)
+            except Exception as e:  # noqa: BLE001 - a failed warm-up is logged, the scenario still runs
+                self.trace.log(0.0, "sys", "setup_error", {"error": repr(e)})
+            reset = getattr(loop, "reset_wall", None)
+            if reset is not None:
+                reset()  # the 120 s wall cap starts with the scenario, after warm-up
         self._t0 = loop.time()
         self._inbox = asyncio.Queue()
         outbox: asyncio.Queue = asyncio.Queue()
         self.trace.log(0.0, "sys", "scenario_start", {"scenario_id": self.sc.id, "modality": self.sc.modality,
                                                       "duration_ms": self.sc.duration_ms})
-        f = self.agent_factory
-        agent = f(clock=self.now_ms) if accepts_kw(f, "clock") else f()
         agent_task = asyncio.ensure_future(agent.run(self._inbox, outbox))
         consumer = asyncio.ensure_future(self._consume(outbox))
 

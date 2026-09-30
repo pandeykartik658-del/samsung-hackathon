@@ -84,6 +84,7 @@ Other entry points:
 | `make scenarios` | `python -m sim.run scenarios --report`: 9 scenarios mirroring the public ones, pass/fail checks + rubric |
 | `make bench` | `python -m bench.run_suite bench/scenarios60 ...`: 60 adversarial scenarios (30 text, 18 audio, 12 visual) |
 | `python -m sim.run scenarios --strip-oracle` | same, with kit-provided transcripts/labels removed so perception must do the work |
+| `python -m bench.real_media bench/scenarios60 /tmp/real60` | copy of the bench with perceivable media: speech from espeak-ng, frames with printed device name, model and display code; run it with `--strip-oracle` to score Whisper + OCR (CI does this on every push) |
 | `python -m bench.profile_suite bench/scenarios60 --out bench/runs/profile` | time to first spoken action, blocking loop callbacks, memory growth, time vs the 120 s cap |
 | `python -m bench.scorer --assumptions` | every assumption the rubric replica makes (A01-A50) |
 | `make serve` | JSONL agent on stdin/stdout |
@@ -96,7 +97,7 @@ Other entry points:
 make test                  # = python -m pytest -q tests viewer
 ```
 
-About 450 tests: protocol parsing, engine and coordinator (stale results dropped, late results after cancel, duplicate bookings blocked, a snapshot on every final), adversarial interruption timing through the virtual-clock harness, tools (three manifests the code has never seen), multimodal backends with timeouts and cancellation, slots, fast path, protocol fuzzing (malformed events, missing fields, unknown types, out-of-order timestamps) and the global watchdog (`tests/test_hardening.py`), the scorer and the scenario generator. Every module ships with tests.
+About 470 tests: protocol parsing, engine and coordinator (stale results dropped, late results after cancel, duplicate bookings blocked, a snapshot on every final), adversarial interruption timing through the virtual-clock harness, tools (three manifests the code has never seen), multimodal backends with timeouts and cancellation, slots, fast path, protocol fuzzing (malformed events, missing fields, unknown types, out-of-order timestamps) and the global watchdog (`tests/test_hardening.py`), the scorer and the scenario generator. Every module ships with tests.
 
 Opt-in tests skip cleanly when their dependency is missing:
 - real Whisper weights: `THEME5_TEST_WHISPER=1 python -m pytest tests/test_multimodal.py` (in Docker: `docker run --rm -e THEME5_TEST_WHISPER=1 theme5 python -m pytest -q tests/test_multimodal.py`);
@@ -165,7 +166,7 @@ Record one real session from the kit (or read its schema), then edit only these 
 | State Snapshot (U16, U17) | `snapshot_payload`, `SNAPSHOT_INTENT`, `SNAPSHOT_SLOTS` | `{"intent": <goal tool>, "slots": {<tool param names>}}` on every action |
 | Output validation (U24) | `validate_action`, `to_wire` | every action validated before it leaves |
 | Session end (U23) | `EV_END` aliases, `CANCEL_PENDING_ON_END` | explicit event or inbox `None`; in-flight calls left alone |
-| Audio / frame payloads (U19, U20) | `theme5/protocol_media.py`: `_PATH_KEYS`, `_B64_KEYS`, `_SR_KEYS`, env `THEME5_MEDIA_ROOT`; budgets `AUDIO_TIMEOUT_S`, `FRAME_TIMEOUT_S` | file path or base64; optional kit transcript/labels used first |
+| Audio / frame payloads (U19, U20) | `theme5/protocol_media.py`: `_PATH_KEYS`, `_B64_KEYS`, `_SR_KEYS`, env `THEME5_MEDIA_ROOT`; budgets `AUDIO_TIMEOUT_S`, `FRAME_TIMEOUT_S` | file path or base64; kit transcript/labels used first when present, otherwise faster-whisper / RapidOCR (`THEME5_PERCEPTION=hints` turns the models off) |
 
 ### 3. Point the local harness at the same format
 
@@ -202,9 +203,9 @@ Check that the kit's Safety & Protocol score is full on the 9 public scenarios b
 
 - **Unreleased kit.** All 26 wire-format unknowns are guesses. The adapter confines the fix to one file, but until the kit ships the protocol score is unverified.
 - **Self-graded numbers.** The 60-scenario bench scores 100.0 against our own scorer on scenarios we generated. Hidden scenarios will be harder; treat the number as a regression guard, not a forecast.
-- **Placeholder media.** WAV/PNG files in `scenarios/` and `bench/` are synthetic; audio and visual scenarios rely on oracle transcripts/labels unless run with `--strip-oracle`.
+- **Placeholder media.** WAV/PNG files in `scenarios/` and `bench/` are tone bursts and coloured boxes, so `--strip-oracle` on them scores the fallback (clarifying questions), not perception. `bench/real_media.py` rebuilds the suite with synthetic speech and text-bearing frames for that; real kit audio (accents, noise) and photos will be harder, and frames with no printed text still need the kit's labels or a vision model.
 - **Whisper not run against real weights in development** (Hugging Face was unreachable from the dev container). The Docker build downloads and smoke-loads them; run the opt-in Whisper test in the image before submitting.
-- **Sibling modules not yet wired into `agent.py`:** `fastpath.py`, `slots.py` and `multimodal.MultimodalPerception` are implemented and tested but the agent still uses its built-in equivalents (`docs/PLAN.md`, next steps).
+- **Sibling modules not yet wired into `agent.py`:** `fastpath.py` and `slots.py` are implemented and tested but the agent still uses its built-in equivalents (`docs/PLAN.md`, next steps). Perception is wired: the agent defaults to `multimodal.HybridPerception` (kit hints first, then Whisper/OCR).
 - **English only.** NLU rules, number and date parsing assume English.
 
 ## Future work (worklet)

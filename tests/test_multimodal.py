@@ -613,3 +613,128 @@ def test_cancelling_the_awaiting_task_cancels_perception():
         await asyncio.sleep(0)
         assert outer.cancelled() and not p.mm.jobs
     run(go())
+
+
+# ---------------------------------------------------------------------------
+# OCR layout quirks and the agent's default HybridPerception
+# ---------------------------------------------------------------------------
+
+def test_ground_ocr_quirks_short_models_dash_codes_display_messages():
+    f = mm.ground_frame("f", [R("AIR CONDITIONER\nMODELAR18B\nE4")])  # OCR drops the space after MODEL
+    assert f.model == "AR18B" and f.error_code == "E4" and f.device == "air conditioner"
+    f = mm.ground_frame("f", [R("MICROWAVE\nMODEL MS23K\nC-d0")])
+    assert f.model == "MS23K" and f.error_code == "C-d0"  # the display's own case is kept
+    f = mm.ground_frame("f", [R("DISHWASHER\nMODEL DW60M\nLC")])
+    assert f.model == "DW60M" and f.error_code == "LC"  # the model token is not taken as the code
+    f = mm.ground_frame("f", [R("TV\nMODELQN55Q80\nNO SIGNAL")])
+    assert f.model == "QN55Q80" and f.error_code == "NO SIGNAL"
+    assert mm.ground_frame("f", [R("AB12C")]).model is None  # short unlabelled tokens stay unclaimed
+
+
+def _hybrid(transcribers=(), analyzers=()):
+    return mm.HybridPerception(mm.MultimodalProcessor(list(transcribers), list(analyzers)))
+
+
+def test_hybrid_prefers_kit_hints_over_backends():
+    async def go():
+        asr, ocr = FakeTranscriber(text="whisper says"), FakeAnalyzer(text="OCR says E4")
+        p = _hybrid([asr], [ocr])
+        assert await p.transcribe(audio_event(transcript="book a flight", confidence=0.95)) == ("book a flight", 0.95)
+        ev = frame_event(labels=[{"label": "dryer", "model": "DV90T", "confidence": 0.92, "text": "HE"}])
+        note, conf = await p.describe(ev)
+        assert note == "dryer DV90T HE" and conf == 0.92
+        assert p.facts(ev) == {"device_model": "DV90T", "error_code": "HE"}
+        assert asr.calls == 0 and ocr.calls == 0
+    run(go())
+
+
+def test_hybrid_runs_backends_on_raw_media():
+    async def go():
+        asr = FakeTranscriber(text="make it kochi", conf=0.9)
+        ocr = FakeAnalyzer(text="AIR CONDITIONER\nMODEL AR18B\nERROR E4")
+        p = _hybrid([mm.HintTranscriber(), asr], [mm.HintFrameAnalyzer(), ocr])
+        assert await p.transcribe(audio_event()) == ("make it kochi", 0.9)
+        ev = frame_event("fr_9")
+        note, conf = await p.describe(ev)
+        assert "air conditioner" in note and "AR18B" in note and conf >= mm.FRAME_MIN_CONFIDENCE
+        assert p.facts(ev) == {"device_model": "AR18B", "error_code": "E4"}
+        assert asr.calls == 1 and ocr.calls == 1
+    run(go())
+
+
+def test_hybrid_degrades_without_backends():
+    async def go():
+        p = _hybrid()
+        await p.setup()
+        assert await p.transcribe(audio_event()) == (None, 0.0)  # agent then asks the user to repeat
+        ev = frame_event()
+        note, conf = await p.describe(ev)
+        assert conf == 0.0 and p.facts(ev) == {}
+        amb = frame_event("fr_2")
+        p2 = _hybrid(analyzers=[FakeAnalyzer(labels=("tv", "soundbar"))])
+        _, conf = await p2.describe(amb)
+        assert conf == 0.0 and p2.facts(amb) == {}  # ambiguous frames contribute no slots
+    run(go())
+
+
+def test_agent_default_perception_and_hints_switch(monkeypatch):
+    from theme5.agent import Agent
+    from theme5.plugins import PayloadPerception
+    monkeypatch.delenv("THEME5_PERCEPTION", raising=False)
+    a = Agent(warm=False)
+    assert isinstance(a.perception, mm.HybridPerception)
+    assert a.perception.media.mm.remaining_s is not None  # budgets follow the scenario clock
+    monkeypatch.setenv("THEME5_PERCEPTION", "hints")
+    assert isinstance(Agent(warm=False).perception, PayloadPerception)
+
+
+def test_loaded_models_are_shared_across_backend_instances():
+    class Counting(mm._ExecutorBackend):
+        name = "counting"
+        loads = 0
+
+        def _cache_key(self):
+            return ("counting-test",)
+
+        def _load(self):
+            Counting.loads += 1
+            return object()
+
+    async def go():
+        mm._MODEL_CACHE.pop(("counting-test",), None)
+        a, b = Counting(), Counting()
+        try:
+            assert await a._ensure() is await b._ensure()
+        finally:
+            a.close(), b.close()
+            mm._MODEL_CACHE.pop(("counting-test",), None)
+    run(go())
+    run(go())  # a fresh event loop (one per scenario in the harness) still reuses the model
+    assert Counting.loads == 2  # once per go(): the cache was cleared in between on purpose
+
+
+def test_failed_model_load_is_not_retried_per_scenario():
+    class Broken(mm._ExecutorBackend):
+        name = "broken"
+        loads = 0
+
+        def _cache_key(self):
+            return ("broken-test",)
+
+        def _load(self):
+            Broken.loads += 1
+            raise OSError("no weights")
+
+    async def go():
+        b = Broken()
+        try:
+            with pytest.raises(mm.BackendUnavailable):
+                await b._ensure()
+        finally:
+            b.close()
+    try:
+        run(go())
+        run(go())
+        assert Broken.loads == 1
+    finally:
+        mm._LOAD_ERRORS.pop(("broken-test",), None)

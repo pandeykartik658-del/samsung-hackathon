@@ -99,6 +99,9 @@ class VirtualTimeLoop(asyncio.SelectorEventLoop):
             if self.on_wall_cap is not None:
                 self.call_soon(self.on_wall_cap)
 
+    def reset_wall(self) -> None:
+        self._wall_start = time.perf_counter()
+
     def wall_elapsed(self) -> float:
         return time.perf_counter() - self._wall_start
 

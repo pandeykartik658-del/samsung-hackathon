@@ -35,9 +35,10 @@ from array import array
 from dataclasses import dataclass, field, replace
 from typing import Any, Awaitable, Callable, Iterable, Mapping, Protocol, Sequence
 
-from .protocol import SPEAK_ACK, SPEAK_FILLER, WARMUP_CAP_S, Event, ToolSpec
+from .protocol import (SPEAK_ACK, SPEAK_FILLER, WARMUP_CAP_S, Event, ToolSpec, audio_transcript, frame_caption,
+                       frame_labels, media_ref)
 from .protocol_media import (
-    ASR_MIN_CONF, AUDIO_TIMEOUT_S, FRAME_MIN_CONFIDENCE, FRAME_TIMEOUT_S, MAX_AUDIO_S,
+    ASR_MIN_CONF, AUDIO_TIMEOUT_S, FRAME_MIN_CONFIDENCE, FRAME_TIMEOUT_S, MAX_AUDIO_S, PERCEPTION_ENV,
     SCENARIO_RESERVE_S, SILENCE_DBFS, MediaInput, load_media, png_size,
 )
 
@@ -245,6 +246,10 @@ class FrameAnalyzer(Protocol):
     async def analyze(self, media: MediaInput) -> FrameReading: ...
 
 
+_MODEL_CACHE: dict[tuple[Any, ...], Any] = {}  # process-wide: key -> loaded model
+_LOAD_ERRORS: dict[tuple[Any, ...], str] = {}  # process-wide: key -> why loading failed
+
+
 class _ExecutorBackend:
     """Runs blocking model code on one private worker thread so the event loop
     never blocks and model access is serialised. A cancelled job's thread runs
@@ -268,6 +273,11 @@ class _ExecutorBackend:
     def _load(self) -> Any:  # pragma: no cover - overridden
         raise NotImplementedError
 
+    def _cache_key(self) -> tuple[Any, ...] | None:
+        """Loaded models are shared by every backend with the same key in this process,
+        so a fresh Agent per scenario does not reload weights. None disables sharing."""
+        return None
+
     async def warmup(self) -> None:
         await self._ensure()
 
@@ -279,13 +289,21 @@ class _ExecutorBackend:
         if self._load_lock is None:
             self._load_lock = asyncio.Lock()
         async with self._load_lock:
+            key = self._cache_key()
+            if self._model is None and key is not None:
+                self._model = _MODEL_CACHE.get(key)
+                self._load_error = self._load_error or _LOAD_ERRORS.get(key)  # don't retry a failed load
             if self._model is None and self._load_error is None:
                 try:
                     self._model = await self._run(self._load)
+                    if key is not None:
+                        _MODEL_CACHE[key] = self._model
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:  # ImportError, download blocked, bad model files ...
                     self._load_error = f"{self.name}: {e.__class__.__name__}: {str(e)[:160]}"
+                    if key is not None:
+                        _LOAD_ERRORS[key] = self._load_error
         if self._model is None:
             raise BackendUnavailable(self._load_error or f"{self.name}: not loaded")
         return self._model
@@ -329,6 +347,9 @@ class FasterWhisperTranscriber(_ExecutorBackend):
         self.cpu_threads = cpu_threads
         self.download_root = download_root or os.environ.get("THEME5_MODEL_DIR")
         self.local_files_only = (os.environ.get("THEME5_OFFLINE") == "1") if local_files_only is None else local_files_only
+
+    def _cache_key(self) -> tuple[Any, ...]:
+        return (self.name, self.model_name, self.compute_type, self.cpu_threads, self.download_root)
 
     def _load(self) -> Any:
         from faster_whisper import WhisperModel  # heavy import stays off the import path
@@ -401,6 +422,9 @@ class RapidOcrAnalyzer(_ExecutorBackend):
     no download). Reads display codes, model labels and button text; also flags
     frames that are too dark or blank to read."""
     name = "rapidocr"
+
+    def _cache_key(self) -> tuple[Any, ...]:
+        return (self.name,)
 
     def _load(self) -> Any:
         from rapidocr_onnxruntime import RapidOCR
@@ -499,7 +523,9 @@ _BRANDS = ("samsung", "lg", "whirlpool", "bosch", "sony", "panasonic", "philips"
 _KNOWN_CODES = {"UE", "UB", "DE", "DC", "LE", "LC", "OE", "OF", "FE", "HE", "TE", "SD", "SUD", "NF",
                 "PE", "CE", "AE", "BE", "HC", "FL", "OL", "IE", "DDC", "CL", "DOOR"}
 _CODE_KW = re.compile(r"(?:error\s*code|fault\s*code|err(?:or)?|code|fault)\s*[:#=\-]?\s*([A-Z0-9]{1,4}(?:-[A-Z0-9]{1,2})?)\b", re.I)
-_CODE_TOKEN = re.compile(r"^(?:[A-Z]{1,2}\d{1,3}[A-Z]?|\d{1,2}[A-Z]{1,2}\d?|[A-Z]{2,3})$")
+_CODE_TOKEN = re.compile(r"^(?:[A-Z]{1,2}\d{1,3}[A-Z]?|\d{1,2}[A-Z]{1,2}\d?|[A-Z]{2,3}|[A-Z]{1,2}-[A-Z0-9]{1,3})$")
+# ASSUMPTION: status messages appliances show instead of a code; read as the error code.
+_DISPLAY_MSGS = ("no signal", "check filter", "clean filter", "door open", "low battery", "no water", "overheat")
 _MODEL_KW = re.compile(r"\b(?:model|mdl|m/n|model\s*no\.?|model\s*number)\s*[:#.]?\s*([A-Z0-9][A-Z0-9/\-]{4,19})", re.I)
 _INDICATOR = re.compile(
     r"\b((?:red|green|blue|orange|amber|yellow|white)\s+(?:light|led)|(?:blinking|flashing|flickering|solid)"
@@ -521,9 +547,10 @@ def _find_phrases(text: str, vocab: Iterable[str]) -> list[str]:
     return [v for _, v in sorted(found)]
 
 
-def _is_model(tok: str) -> bool:
+def _is_model(tok: str, labelled: bool = False) -> bool:
+    """Model-number shape. A token printed after "Model" may be short (e.g. AR18B)."""
     t = tok.strip(".,:;()[]").upper()
-    if not (6 <= len(t) <= 20) or t in _NOT_MODEL or not re.fullmatch(r"[A-Z0-9][A-Z0-9/\-]+", t):
+    if not ((5 if labelled else 6) <= len(t) <= 20) or t in _NOT_MODEL or not re.fullmatch(r"[A-Z0-9][A-Z0-9/\-]+", t):
         return False
     return sum(c.isalpha() for c in t) >= 2 and sum(c.isdigit() for c in t) >= 2
 
@@ -546,6 +573,13 @@ def ground_frame(ref: str, readings: Sequence[FrameReading]) -> FrameFacts:
     parts = [p for p in _find_phrases(text, _PARTS) if not (p in _DEVICE_CANON and _DEVICE_CANON[p] in devices)]
     brand = next(iter(_find_phrases(text, _BRANDS)), None)
 
+    model = None
+    mm = _MODEL_KW.search(text)
+    if mm and _is_model(mm.group(1), labelled=True):
+        model = mm.group(1).upper().strip(".,")
+    else:  # OCR often drops the space in "MODEL AR18B" -> "MODELAR18B"
+        toks = (re.sub(r"^(?:MODEL|MDL)[:#.]?", "", tok.strip(".,:;()[]").upper()) for tok in re.split(r"\s+", text))
+        model = next((t for t in toks if _is_model(t)), None)
     code, explicit = None, False
     m = _CODE_KW.search(text)
     if m and (any(c.isdigit() for c in m.group(1)) or m.group(1).upper() in _KNOWN_CODES):
@@ -553,17 +587,14 @@ def ground_frame(ref: str, readings: Sequence[FrameReading]) -> FrameFacts:
     else:
         for tok in re.split(r"\s+", text):
             t = tok.strip(".,:;()[]!").upper()
-            if _CODE_TOKEN.match(t) and (any(c.isdigit() for c in t) or t in _KNOWN_CODES) \
+            if t != model and _CODE_TOKEN.match(t) and (any(c.isdigit() for c in t) or t in _KNOWN_CODES) \
                     and t not in {"4K", "8K", "5G", "4G", "2G", "3G", "HD", "TV", "AC", "LED", "USB", "ON", "OFF"}:
-                code = t
+                code = tok.strip(".,:;()[]!") if "-" in t else t  # keep "C-d0" as displayed
                 break
+        if code is None:
+            msg = next(iter(_find_phrases(text, _DISPLAY_MSGS)), None)
+            code = msg.upper() if msg else None
 
-    model = None
-    mm = _MODEL_KW.search(text)
-    if mm and _is_model(mm.group(1)):
-        model = mm.group(1).upper().strip(".,")
-    else:
-        model = next((tok.strip(".,:;()[]").upper() for tok in re.split(r"\s+", text) if _is_model(tok)), None)
     if model and code and model == code:
         code = None
 
@@ -1066,3 +1097,68 @@ class MultimodalPerception:
         if out.status == "ok":
             return note or None, out.confidence
         return note or "unclear frame", 0.0
+
+
+# ===========================================================================
+# Agent default: kit hints first, real ASR/OCR when the kit sends raw media only
+# ===========================================================================
+
+
+def perception_mode() -> str:
+    """THEME5_PERCEPTION=hints restores the old hints-only perception; anything else is hybrid."""
+    return "hints" if os.environ.get(PERCEPTION_ENV, "").strip().lower() in ("hints", "payload") else "hybrid"
+
+
+class HybridPerception:
+    """Default Agent perception (plugins.Perception + setup + facts).
+
+    A media event that carries a transcript or labels/caption (ASSUMPTION: the
+    kit may ship them, SPEC U19/U20) is read exactly like PayloadPerception.
+    A raw clip or frame goes to MultimodalPerception (faster-whisper, RapidOCR).
+    With no usable backend the audio path returns (None, 0) and the agent asks
+    the user to repeat; frames degrade to "unclear frame" and a clarification.
+    Backend budgets follow the scenario clock via `remaining_s`."""
+
+    def __init__(self, processor: MultimodalProcessor | None = None,
+                 remaining_s: Callable[[], float] | None = None) -> None:
+        from .plugins import PayloadPerception  # plugins stays import-light; no cycle at module load
+        self.payload = PayloadPerception()
+        self.media = MultimodalPerception(processor or MultimodalProcessor(remaining_s=remaining_s))
+        self._facts: dict[str, dict[str, Any]] = {}  # media ref -> slots perceived from raw pixels
+        self.backend_status: dict[str, str] = {}
+
+    async def setup(self) -> None:
+        self.backend_status = await self.media.mm.warmup()
+
+    @staticmethod
+    def _has_transcript(ev: Event) -> bool:
+        text, _ = audio_transcript(ev)
+        return bool(text and text.strip())
+
+    @staticmethod
+    def _has_labels(ev: Event) -> bool:
+        cap = frame_caption(ev)
+        return bool(frame_labels(ev) or (cap and cap.strip()))
+
+    async def transcribe(self, ev: Event) -> tuple[str | None, float]:
+        if self._has_transcript(ev):
+            return await self.payload.transcribe(ev)
+        return await self.media.transcribe(ev)
+
+    async def describe(self, ev: Event) -> tuple[str | None, float]:
+        if self._has_labels(ev):
+            return await self.payload.describe(ev)
+        note, conf = await self.media.describe(ev)
+        facts = self.media.last_facts
+        if facts is not None and conf > 0.0:
+            slots = {"device_model": facts.model, "error_code": facts.error_code}
+            self._facts[media_ref(ev) or f"frame@{ev.t:g}"] = {k: v for k, v in slots.items() if v}
+        return note, conf
+
+    def facts(self, ev: Event) -> dict[str, Any]:
+        if self._has_labels(ev):
+            return self.payload.facts(ev)
+        return dict(self._facts.get(media_ref(ev) or f"frame@{ev.t:g}", {}))
+
+    def close(self) -> None:
+        self.media.mm.close()

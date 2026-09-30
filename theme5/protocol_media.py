@@ -28,6 +28,7 @@ SILENCE_DBFS = -50.0  # RMS below this is treated as "heard nothing"
 FRAME_MIN_CONFIDENCE = ASR_MIN_CONFIDENCE  # below this a frame reading is ambiguous (agent.py uses the same bar)
 ASR_MIN_CONF = ASR_MIN_CONFIDENCE  # re-export; the single source is protocol.py
 MEDIA_ROOT_ENV = "THEME5_MEDIA_ROOT"  # base dir for relative media paths
+PERCEPTION_ENV = "THEME5_PERCEPTION"  # "hints" = trust kit transcripts/labels only (old default)
 
 # ASSUMPTION: inline media may arrive base64-encoded under one of these keys.
 _B64_KEYS = ("data", "b64", "base64", "bytes", "content", "audio_base64", "wav_base64",

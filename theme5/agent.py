@@ -19,6 +19,7 @@ from .engine import Engine
 from .events import Clarify, FinalResponse, Speak
 from .planner import (ResultStore, Step, fill_args, goal_tool, next_step, schema_values, slot_for_param,
                       tokens)
+from .multimodal import HybridPerception, perception_mode
 from .plugins import LLMPlugin, PayloadPerception, Perception, llm_parse
 from .protocol import (
     ACK_ON_INTERRUPT, ASR_MIN_CONFIDENCE, EV_AUDIO, EV_EOT, EV_FRAME, EV_INTERRUPT, EV_MANIFEST, EV_TEXT,
@@ -51,7 +52,10 @@ class Agent:
         self.registry = ToolRegistry(tools)
         self.results = ResultStore()
         self.llm = llm
-        self.perception: Perception = perception or PayloadPerception()
+        if perception is None:  # hints first, real ASR/OCR for raw media (THEME5_PERCEPTION=hints: hints only)
+            perception = (PayloadPerception() if perception_mode() == "hints"
+                          else HybridPerception(remaining_s=self.engine.watchdog.remaining_s))
+        self.perception: Perception = perception
         self.ref_date = ref_date
         self._buf = ""
         self._last_slot: str | None = None

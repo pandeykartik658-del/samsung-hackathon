@@ -187,3 +187,18 @@ def test_asset_paths_resolved_before_replay(tmp_path, monkeypatch):
     res = h.run()
     audio = next(r for r in res.records if r["kind"] == "audio_clip")
     assert audio["data"]["path"] == str(tmp_path / "a.wav")
+
+
+def test_setup_hook_runs_before_the_scenario_clock():
+    seen = {}
+
+    class Warm(ScriptAgent):
+        async def setup(self):
+            await asyncio.sleep(30)  # a long warm-up must not eat scenario time
+            seen["setup"] = True
+
+    res = run_scenario(make([TXT]), lambda: Warm({"e1": [final("ok", None)]}))
+    assert seen.get("setup") and res.end_reason == "quiescent"
+    first_in = next(r for r in res.records if r["dir"] == "in")
+    assert first_in["t_ms"] == 0
+    assert next(r for r in res.records if r["kind"] == "final")["t_ms"] < 1000
