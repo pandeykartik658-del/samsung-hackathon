@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from theme5.multimodal import FasterWhisperTranscriber, decode_wav
+from theme5.multimodal import FasterWhisperTranscriber, asr_prompt, decode_wav
 from theme5.protocol_media import ASR_MIN_CONF, MediaInput
 
 
@@ -27,7 +27,7 @@ async def probe(root: Path, limit: int) -> int:
             data = (root / ev["path"]).read_bytes()
             media = MediaInput(kind="audio", ref=ev.get("clip_id", ""), data=data, hint_text=None,
                                hint_confidence=0.0)
-            t = await asr.transcribe(media, decode_wav(data), None)
+            t = await asr.transcribe(media, decode_wav(data), asr_prompt())
             n += 1
             low += t.confidence < ASR_MIN_CONF
             print(f"{t.confidence:.2f}  oracle={ev.get('transcript')!r}\n      heard ={t.text!r}")
