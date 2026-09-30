@@ -1,132 +1,132 @@
 1
-00:00:00,150 --> 00:00:07,850
+00:00:02,293 --> 00:00:05,707
 Theme 05: Interruptible Real-Time Agents.
 
 2
-00:00:08,150 --> 00:00:11,088
+00:00:08,491 --> 00:00:12,032
 Assistants take turns: listen, think, speak. People don't.
 
 3
-00:00:11,388 --> 00:00:18,374
+00:00:12,624 --> 00:00:17,723
 They cut in, correct themselves and change their mind while a search or a booking is still running.
 
 4
-00:00:18,674 --> 00:00:24,850
+00:00:18,315 --> 00:00:24,267
 Our agent keeps talking, cancels the work nobody wants any more, re-plans, and never books twice.
 
 5
-00:00:25,150 --> 00:00:29,489
+00:00:25,432 --> 00:00:28,291
 Events come in on one queue, actions go out on another.
 
 6
-00:00:29,789 --> 00:00:36,236
+00:00:28,684 --> 00:00:35,361
 Only protocol.py knows the evaluation kit's field names, so the real kit is a one-file change.
 
 7
-00:00:36,536 --> 00:00:44,248
+00:00:35,754 --> 00:00:41,429
 The fast path is rules only, no LLM, so the first answer goes out on the same event tick.
 
 8
-00:00:44,548 --> 00:00:50,151
+00:00:41,822 --> 00:00:48,200
 The coordinator owns every tool call: cancel tokens, generation counters and an idempotency ledger.
 
 9
-00:00:50,451 --> 00:00:53,946
+00:00:48,593 --> 00:00:52,881
 Speech recognition and OCR run as cancellable background tasks.
 
 10
-00:00:54,246 --> 00:00:59,850
+00:00:53,274 --> 00:00:59,525
 A watchdog closes any turn still open at 110 seconds, before the 120-second cap.
 
 11
-00:01:00,150 --> 00:01:05,497
+00:01:02,780 --> 00:01:06,535
 Scenario 1: the user changes the destination mid-search.
 
 12
-00:01:05,797 --> 00:01:11,850
+00:01:09,604 --> 00:01:12,868
 “Search flights from Bangalore to Delhi on October 5th.”
 
 13
-00:01:12,150 --> 00:01:22,438
+00:01:15,938 --> 00:01:20,717
 At 0.4 s the agent says what it is doing and starts the Delhi search.
 
 14
-00:01:22,738 --> 00:01:30,203
+00:01:23,787 --> 00:01:29,120
 At 1.9 s the user interrupts: “Actually, make that Hyderabad instead.”
 
 15
-00:01:30,503 --> 00:01:40,085
+00:01:32,190 --> 00:01:36,691
 On that same tick the Delhi search is cancelled, before the agent says anything.
 
 16
-00:01:40,385 --> 00:01:48,556
+00:01:39,761 --> 00:01:44,710
 A Hyderabad search starts, and the snapshot now says destination = Hyderabad.
 
 17
-00:01:48,856 --> 00:01:59,850
+00:01:47,780 --> 00:01:54,500
 At 4.9 s the result lands: two flights. Anything the Delhi call returns later is ignored.
 
 18
-00:02:00,150 --> 00:02:03,882
+00:02:02,447 --> 00:02:04,943
 Scenario 2: the duplicate-booking trap.
 
 19
-00:02:04,182 --> 00:02:12,753
+00:02:08,569 --> 00:02:13,134
 “Book flight AI-202 for Rahul Verma.” The booking takes six seconds.
 
 20
-00:02:13,053 --> 00:02:28,882
+00:02:16,760 --> 00:02:24,589
 At 2.5 s: “Did that go through? Please book AI-202.” The agent says it is still working and sends nothing.
 
 21
-00:02:29,182 --> 00:02:42,592
+00:02:28,214 --> 00:02:34,764
 At 4.5 s: “Just book it now please.” Still nothing sent: the ledger holds the booking's key.
 
 22
-00:02:42,892 --> 00:02:49,850
+00:02:38,389 --> 00:02:44,277
 At 6.0 s: one booking, reference RV4T9N. Not three.
 
 23
-00:02:50,150 --> 00:03:01,100
+00:02:52,676 --> 00:02:56,580
 Scenario 3: a camera frame and “How do I fix the error on this?”
 
 24
-00:03:01,400 --> 00:03:13,957
+00:03:01,481 --> 00:03:07,134
 The frame is ambiguous, so the agent doesn't guess. It asks: “Which device is this about?”
 
 25
-00:03:14,257 --> 00:03:21,189
+00:03:12,035 --> 00:03:15,534
 “The washer. It's showing 4C.” A second frame arrives.
 
 26
-00:03:21,489 --> 00:03:34,850
+00:03:20,435 --> 00:03:27,773
 The agent looks up the manual for model WW90T and answers from it: error 4C, water supply.
 
 27
-00:03:35,150 --> 00:03:44,004
+00:03:36,129 --> 00:03:42,188
 We can't see the hidden set, so we built our own: 60 adversarial scenarios in 13 families.
 
 28
-00:03:44,304 --> 00:03:53,158
+00:03:43,997 --> 00:03:51,037
 30 text, 18 audio, 12 visual, scored by a replica of the guide's rubric. Suite score: 100.
 
 29
-00:03:53,458 --> 00:04:02,312
+00:03:52,846 --> 00:04:00,270
 100 again on a fresh seed it was never tuned on. First spoken action: 0.69 ms median.
 
 30
-00:04:02,612 --> 00:04:09,850
+00:04:02,078 --> 00:04:07,412
 These are our own simulator and scorer. The official evaluation kit isn't released yet.
 
 31
-00:04:10,150 --> 00:04:16,072
+00:04:10,555 --> 00:04:15,312
 Not done yet: the kit's field names are still guesses, isolated in one file.
 
 32
-00:04:16,372 --> 00:04:21,850
+00:04:16,282 --> 00:04:20,826
 Whisper and OCR are built and tested, but not switched on by default.
 
 33
-00:04:22,150 --> 00:04:29,850
+00:04:23,077 --> 00:04:28,923
 Next: conform to the real kit, then an on-device intent model and streaming speech. Thank you.
 

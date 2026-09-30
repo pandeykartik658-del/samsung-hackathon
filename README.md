@@ -13,13 +13,13 @@ Samsung PRISM GenAI Hackathon 2026, Theme 05. A voice/text/vision assistant that
 | Members | `TODO: name, year and branch for each member (max 4)` |
 | Release tag | [`PRISM_GENAI_HACKATHON_Y2026`](https://github.com/pandeykartik658-del/samsung-hackathon/releases/tag/PRISM_GENAI_HACKATHON_Y2026) (the tagged commit is the one judged) |
 | Presentation | [`submission/Theme05_Jury_Deck.pptx`](submission/Theme05_Jury_Deck.pptx) (PDF copy: [`submission/Theme05_Jury_Deck.pdf`](submission/Theme05_Jury_Deck.pdf)) |
-| Demo video (in repo) | [`submission/Theme05_Demo.mp4`](submission/Theme05_Demo.mp4), 4:30, 1080p, burned-in captions ([`.srt`](submission/Theme05_Demo_captions.srt)) |
+| Demo video (in repo) | [`submission/Theme05_Demo.mp4`](submission/Theme05_Demo.mp4), 4:30, 1080p, voice narration with burned-in captions ([`.srt`](submission/Theme05_Demo_captions.srt)) |
 | Demo video (YouTube/Drive) | `TODO: paste the YouTube (unlisted) or Google Drive link here` |
 | Video script | [`submission/DEMO_VIDEO_SCRIPT.md`](submission/DEMO_VIDEO_SCRIPT.md); the trace pages it shows are in [`submission/viewer/`](submission/viewer/) (open in a browser, press Play) |
 | Docker | [`Dockerfile`](Dockerfile), built and tested on every push by [`.github/workflows/docker.yml`](.github/workflows/docker.yml) |
 | Requirements | [`requirements.txt`](requirements.txt) (pinned runtime), [`requirements-dev.txt`](requirements-dev.txt) (tests) |
 
-Everything the submission references (code, requirements, Docker files, deck, video, docs) is in the tagged commit. The video is 6 MB, so it is committed directly; the external link is only a convenience for the Google Form.
+Everything the submission references (code, requirements, Docker files, deck, video, docs) is in the tagged commit. The video is 9 MB, so it is committed directly; the external link is only a convenience for the Google Form.
 
 ### Quick start
 
