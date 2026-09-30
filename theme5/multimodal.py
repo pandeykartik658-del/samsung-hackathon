@@ -39,6 +39,7 @@ from .protocol import (SPEAK_ACK, SPEAK_FILLER, WARMUP_CAP_S, Event, ToolSpec, a
                        frame_labels, media_ref)
 from .protocol_media import (
     ASR_MIN_CONF, AUDIO_TIMEOUT_S, FRAME_MIN_CONFIDENCE, FRAME_TIMEOUT_S, MAX_AUDIO_S, PERCEPTION_ENV,
+    ASR_PROMPT_LEAD, WHISPER_ACCEPT_CONF,
     SCENARIO_RESERVE_S, SILENCE_DBFS, MediaInput, load_media, png_size,
 )
 
@@ -373,13 +374,22 @@ class FasterWhisperTranscriber(_ExecutorBackend):
         tot = sum(max(s.end - s.start, 0.01) for s in segs)
         conf = sum(math.exp(min(0.0, s.avg_logprob)) * (1.0 - s.no_speech_prob) * max(s.end - s.start, 0.01)
                    for s in segs) / tot
-        return Transcript(text, max(0.0, min(1.0, conf)), self.name)
+        return Transcript(text, calibrate_whisper(conf), self.name)
 
     async def transcribe(self, media: MediaInput, audio: WavAudio | None, prompt: str | None) -> Transcript:
         if audio is None:
             raise BackendUnavailable("no decodable audio")
         model = await self._ensure()
         return await self._run(self._decode, model, resample_16k(audio), prompt)
+
+
+def calibrate_whisper(raw: float, accept: float = WHISPER_ACCEPT_CONF, bar: float = ASR_MIN_CONF) -> float:
+    """Piecewise-linear, monotonic map of Whisper's raw score so that `accept` lands on the
+    agent's confirmation bar: raw >= accept is acted on, raw < accept is confirmed first."""
+    r = max(0.0, min(1.0, raw))
+    if r >= accept:
+        return round(bar + (r - accept) * (1.0 - bar) / (1.0 - accept), 4)
+    return round(r * bar / accept, 4)
 
 
 class HostedTranscriber:
@@ -1078,12 +1088,13 @@ class MultimodalPerception:
         self.mm = processor or MultimodalProcessor()
         self.last_clarify: str | None = None
         self.last_facts: FrameFacts | None = None
+        self.prompt: str | None = None  # ASR initial prompt (domain vocabulary)
 
     async def setup(self) -> None:
         await self.mm.warmup()
 
     async def transcribe(self, ev: Event) -> tuple[str | None, float]:
-        out = await self.mm.on_audio(ev).task
+        out = await self.mm.on_audio(ev, self.prompt).task
         self.last_clarify = out.clarify
         if out.status == "ok":
             return out.text, out.confidence
@@ -1102,6 +1113,14 @@ class MultimodalPerception:
 # ===========================================================================
 # Agent default: kit hints first, real ASR/OCR when the kit sends raw media only
 # ===========================================================================
+
+
+def asr_prompt(extra: Iterable[str] = ()) -> str:
+    """Whisper initial prompt: domain lead plus the Indian city names the slot lexicon knows
+    (Whisper base.en otherwise hears "Jaipur" as "diaper"). Kept well under Whisper's 224-token cap."""
+    from .slots import _CITIES  # lazy: slots is heavier than this module needs at import
+    words = [c.title() for c in _CITIES[:36]] + ["Bangalore", *extra]
+    return f"{ASR_PROMPT_LEAD} Cities: {', '.join(dict.fromkeys(words))}."
 
 
 def perception_mode() -> str:
@@ -1124,6 +1143,7 @@ class HybridPerception:
         from .plugins import PayloadPerception  # plugins stays import-light; no cycle at module load
         self.payload = PayloadPerception()
         self.media = MultimodalPerception(processor or MultimodalProcessor(remaining_s=remaining_s))
+        self.media.prompt = asr_prompt()
         self._facts: dict[str, dict[str, Any]] = {}  # media ref -> slots perceived from raw pixels
         self.backend_status: dict[str, str] = {}
 

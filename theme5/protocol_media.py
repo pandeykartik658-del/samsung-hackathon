@@ -28,6 +28,12 @@ SILENCE_DBFS = -50.0  # RMS below this is treated as "heard nothing"
 FRAME_MIN_CONFIDENCE = ASR_MIN_CONFIDENCE  # below this a frame reading is ambiguous (agent.py uses the same bar)
 ASR_MIN_CONF = ASR_MIN_CONFIDENCE  # re-export; the single source is protocol.py
 MEDIA_ROOT_ENV = "THEME5_MEDIA_ROOT"  # base dir for relative media paths
+# ASSUMPTION: Whisper's exp(mean log-prob) runs low on clear but unusual speech (Indian city names
+# scored 0.4-0.67 when correct), so its raw score is recalibrated: WHISPER_ACCEPT_CONF maps onto
+# ASR_MIN_CONF, i.e. raw 0.4 and above is acted on, below that the agent asks "did you say ...?".
+WHISPER_ACCEPT_CONF = 0.4
+# ASSUMPTION: domain words given to Whisper as its initial prompt (city names from slots.py are added).
+ASR_PROMPT_LEAD = "Flight booking, parcel tracking and smart home requests. Flights such as AI-5050 and SG-2124."
 PERCEPTION_ENV = "THEME5_PERCEPTION"  # "hints" = trust kit transcripts/labels only (old default)
 
 # ASSUMPTION: inline media may arrive base64-encoded under one of these keys.

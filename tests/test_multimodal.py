@@ -738,3 +738,27 @@ def test_failed_model_load_is_not_retried_per_scenario():
         assert Broken.loads == 1
     finally:
         mm._LOAD_ERRORS.pop(("broken-test",), None)
+
+
+def test_whisper_calibration_maps_accept_bar_onto_agent_bar():
+    c = mm.calibrate_whisper
+    assert c(mm.WHISPER_ACCEPT_CONF) == pytest.approx(mm.ASR_MIN_CONF)
+    assert c(mm.WHISPER_ACCEPT_CONF - 0.01) < mm.ASR_MIN_CONF <= c(0.5)
+    assert c(0.0) == 0.0 and c(1.0) == 1.0 and c(2.0) == 1.0 and c(-1) == 0.0
+    xs = [i / 20 for i in range(21)]
+    assert all(c(a) <= c(b) for a, b in zip(xs, xs[1:]))  # monotonic
+
+
+def test_hybrid_gives_whisper_a_domain_prompt():
+    class PromptSpy(FakeTranscriber):
+        async def transcribe(self, media, audio, prompt):
+            self.prompt = prompt
+            return await super().transcribe(media, audio, prompt)
+
+    async def go():
+        spy = PromptSpy()
+        p = _hybrid([spy])
+        await p.transcribe(audio_event())
+        assert "Jaipur" in spy.prompt and "Lucknow" in spy.prompt and "Bangalore" in spy.prompt
+        assert len(spy.prompt.split()) < 120  # far below Whisper's 224-token prompt cap
+    run(go())
